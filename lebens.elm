@@ -36,9 +36,14 @@ snake =
 update : (Time, Direction) -> Model -> Model
 update (dt, dir) snake =
     let
-        newSnake = stepV snake dir
+        newSnake = physicsUpdate dt (stepV snake dir)
+        head = Maybe.withDefault (0, 0) (List.head newSnake.path)
+        tail = Maybe.withDefault [(1, 1)] (List.tail snake.path)
     in
-        physicsUpdate dt (stepV snake dir)
+        if List.any (colliding head) tail then
+            snake
+        else
+            newSnake
 
 
 physicsUpdate : Time -> Model -> Model
@@ -50,7 +55,6 @@ physicsUpdate dt snake =
         newSnake = { snake |
             path = (nextX, nextY) :: snake.path
         }
-        log = Debug.log "am i within?" (within newSnake)
     in
         newSnake
 
@@ -75,22 +79,16 @@ stepV snake dir =
 
 -- are n and m near each other?
 -- specifically are they within c of each other?
---near : (Float, Float) -> Float -> Bool
+near : Float -> Float -> Float -> Bool
 near n c m =
     m >= n-c && m <= n+c
 
 
 -- is the snake within its tail?
-within : Model -> Bool
-within snake =
-    let tail = Maybe.withDefault [(1,1)] (List.tail snake.path)
-    in
-        List.any (\(x, y) -> near x 1 snake.vx && near y 1 snake.vy) tail
-        --List.any (\(x, y) -> x == snake.vx && y == snake.vy) tail
-    --any (near snake.y) snake.path 1
-    --&& any (near snaky.x) snake.path 1
-    --near player.x 8 ball.x
-    --&& near player.y 20 ball.y
+colliding : (Float, Float) -> (Float, Float) -> Bool
+colliding (x1, y1) (x2, y2) =
+    near x1 2 x2
+    && near y1 2 y2
 
 
 view : (Int, Int) -> Model -> Element

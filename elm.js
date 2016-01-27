@@ -7839,42 +7839,35 @@ Elm.Main.make = function (_elm) {
    var near = F3(function (n,c,m) {
       return _U.cmp(m,n - c) > -1 && _U.cmp(m,n + c) < 1;
    });
-   var within = function (snake) {
-      var tail = A2($Maybe.withDefault,
-      _U.list([{ctor: "_Tuple2",_0: 1,_1: 1}]),
-      $List.tail(snake.path));
-      return A2($List.any,
-      function (_p5) {
-         var _p6 = _p5;
-         return A3(near,_p6._0,1,snake.vx) && A3(near,_p6._1,1,snake.vy);
-      },
-      tail);
-   };
+   var colliding = F2(function (_p6,_p5) {
+      var _p7 = _p6;
+      var _p8 = _p5;
+      return A3(near,_p7._0,2,_p8._0) && A3(near,_p7._1,2,_p8._1);
+   });
    var snake = {path: _U.list([{ctor: "_Tuple2",_0: 0,_1: 0}])
                ,vx: 0
                ,vy: 0
                ,angle: 90};
    var speed = 100;
    var physicsUpdate = F2(function (dt,snake) {
-      var _p7 = A2($Maybe.withDefault,
+      var _p9 = A2($Maybe.withDefault,
       {ctor: "_Tuple2",_0: 0,_1: 0},
       $List.head(snake.path));
-      var x = _p7._0;
-      var y = _p7._1;
+      var x = _p9._0;
+      var y = _p9._1;
       var nextX = x + snake.vx * (dt * speed);
       var nextY = y + snake.vy * (dt * speed);
       var newSnake = _U.update(snake,
       {path: A2($List._op["::"],
       {ctor: "_Tuple2",_0: nextX,_1: nextY},
       snake.path)});
-      var log = A2($Debug.log,"am i within?",within(newSnake));
       return newSnake;
    });
    var maxAngleChange = 5;
    var stepV = F2(function (snake,dir) {
       var angle = function () {
-         var _p8 = dir;
-         switch (_p8.ctor)
+         var _p10 = dir;
+         switch (_p10.ctor)
          {case "Left": return snake.angle + maxAngleChange;
             case "Right": return snake.angle + (0 - maxAngleChange);
             default: return snake.angle;}
@@ -7884,11 +7877,18 @@ Elm.Main.make = function (_elm) {
       ,vy: $Basics.sin(angle * $Basics.pi / 180)
       ,angle: angle});
    });
-   var update = F2(function (_p9,snake) {
-      var _p10 = _p9;
-      var _p11 = _p10._1;
-      var newSnake = A2(stepV,snake,_p11);
-      return A2(physicsUpdate,_p10._0,A2(stepV,snake,_p11));
+   var update = F2(function (_p11,snake) {
+      var _p12 = _p11;
+      var tail = A2($Maybe.withDefault,
+      _U.list([{ctor: "_Tuple2",_0: 1,_1: 1}]),
+      $List.tail(snake.path));
+      var newSnake = A2(physicsUpdate,
+      _p12._0,
+      A2(stepV,snake,_p12._1));
+      var head = A2($Maybe.withDefault,
+      {ctor: "_Tuple2",_0: 0,_1: 0},
+      $List.head(newSnake.path));
+      return A2($List.any,colliding(head),tail) ? snake : newSnake;
    });
    var Straight = {ctor: "Straight"};
    var Right = {ctor: "Right"};
@@ -7932,7 +7932,7 @@ Elm.Main.make = function (_elm) {
                              ,physicsUpdate: physicsUpdate
                              ,stepV: stepV
                              ,near: near
-                             ,within: within
+                             ,colliding: colliding
                              ,view: view
                              ,main: main
                              ,input: input
