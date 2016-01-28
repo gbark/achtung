@@ -7861,7 +7861,10 @@ Elm.Main.make = function (_elm) {
    var snakeCollision = F2(function (_p10,_p9) {
       var _p11 = _p10;
       var _p12 = _p9;
-      return A3(near,_p11._0,2,_p12._0) && A3(near,_p11._1,2,_p12._1);
+      return A3(near,_p11._0,1.9,_p12._0) && A3(near,
+      _p11._1,
+      1.9,
+      _p12._1);
    });
    var speed = 100;
    var maxAngleChange = 5;
@@ -7890,24 +7893,28 @@ Elm.Main.make = function (_elm) {
       {ctor: "_Tuple2",_0: nextX,_1: nextY},
       player.path)});
    });
-   var updatePlayer = F3(function (delta,viewport,player) {
-      var t = A2($Maybe.withDefault,
-      _U.list([{ctor: "_Tuple2",_0: 1,_1: 1}]),
-      $List.tail(player.path));
-      var nextPlayer = A2(stepPlayer,delta,player);
-      var h = A2($Maybe.withDefault,
-      {ctor: "_Tuple2",_0: 0,_1: 0},
-      $List.head(nextPlayer.path));
-      var hitSnake = A2($List.any,snakeCollision(h),t);
-      var hitWall = A2(wallCollision,h,viewport);
-      var log = A2($Debug.log,"im dead",hitSnake || hitWall);
-      return hitSnake || hitWall ? _U.update(player,
-      {alive: false}) : nextPlayer;
+   var updatePlayer = F4(function (delta,
+   viewport,
+   allPlayers,
+   player) {
+      if ($Basics.not(player.alive)) return player; else {
+            var snakePaths = A3($List.foldl,
+            F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
+            _U.list([]),
+            allPlayers);
+            var nextPlayer = A2(stepPlayer,delta,player);
+            var nextPos = A2($Maybe.withDefault,
+            {ctor: "_Tuple2",_0: 0,_1: 0},
+            $List.head(nextPlayer.path));
+            var hitSnake = A2($List.any,snakeCollision(nextPos),snakePaths);
+            var hitWall = A2(wallCollision,nextPos,viewport);
+            return hitSnake || hitWall ? _U.update(player,
+            {alive: false}) : nextPlayer;
+         }
    });
    var Straight = {ctor: "Straight"};
-   var defaultPlayer = {path: _U.list([{ctor: "_Tuple2"
-                                       ,_0: 0
-                                       ,_1: 0}])
+   var defaultPlayer = {id: 1
+                       ,path: _U.list([{ctor: "_Tuple2",_0: 0,_1: 0}])
                        ,vx: 0
                        ,vy: 0
                        ,angle: 90
@@ -7918,7 +7925,8 @@ Elm.Main.make = function (_elm) {
                        ,leftKey: $Char.toCode(_U.chr("A"))
                        ,rightKey: $Char.toCode(_U.chr("S"))};
    var player2 = _U.update(defaultPlayer,
-   {path: _U.list([{ctor: "_Tuple2",_0: 30,_1: -30}])
+   {id: 2
+   ,path: _U.list([{ctor: "_Tuple2",_0: 30,_1: -30}])
    ,angle: 95
    ,color: A3($Color.rgb,60,100,60)
    ,leftKey: $Char.toCode(_U.chr("K"))
@@ -7945,14 +7953,14 @@ Elm.Main.make = function (_elm) {
    });
    var update = F2(function (_p16,_p15) {
       var _p17 = _p16;
-      var _p19 = _p17.viewport;
+      var _p20 = _p17.viewport;
       var _p18 = _p15;
-      var playersWithDirection = A2(mapInputs,_p18.players,_p17.keys);
-      return _U.update(_p18,
-      {players: A2($List.map,
-      A2(updatePlayer,_p17.delta,_p19),
-      playersWithDirection)
-      ,viewport: _p19});
+      var _p19 = _p18.players;
+      var playersWithDirection = A2(mapInputs,_p19,_p17.keys);
+      var nextPlayers = A2($List.map,
+      A3(updatePlayer,_p17.delta,_p20,_p19),
+      playersWithDirection);
+      return _U.update(_p18,{players: nextPlayers,viewport: _p20});
    });
    var Input = F4(function (a,b,c,d) {
       return {space: a,keys: b,delta: c,viewport: d};
@@ -7977,16 +7985,19 @@ Elm.Main.make = function (_elm) {
                         return function (h) {
                            return function (i) {
                               return function (j) {
-                                 return {path: a
-                                        ,vx: b
-                                        ,vy: c
-                                        ,angle: d
-                                        ,direction: e
-                                        ,alive: f
-                                        ,score: g
-                                        ,color: h
-                                        ,leftKey: i
-                                        ,rightKey: j};
+                                 return function (k) {
+                                    return {id: a
+                                           ,path: b
+                                           ,vx: c
+                                           ,vy: d
+                                           ,angle: e
+                                           ,direction: f
+                                           ,alive: g
+                                           ,score: h
+                                           ,color: i
+                                           ,leftKey: j
+                                           ,rightKey: k};
+                                 };
                               };
                            };
                         };

@@ -21,7 +21,8 @@ type alias Game =
 
 
 type alias Player =
-    { path: List (Float, Float)
+    { id: Int
+    , path: List (Float, Float)
     , vx: Float
     , vy: Float
     , angle: Float
@@ -54,7 +55,8 @@ speed = 100
 
 defaultPlayer : Player
 defaultPlayer =
-    { path = [(0, 0)] -- randomize
+    { id = 1
+    , path = [(0, 0)] -- randomize
     , vx = 0
     , vy = 0
     , angle = 90 -- randomize
@@ -69,7 +71,8 @@ defaultPlayer =
 
 player2 : Player
 player2 =
-    { defaultPlayer | path = [(30, -30)]
+    { defaultPlayer | id = 2
+                    , path = [(30, -30)]
                     , angle = 95
                     , color = rgb 60 100 60
                     , leftKey = (Char.toCode 'K')
@@ -88,26 +91,29 @@ defaultGame =
 update : Input -> Game -> Game
 update {space, keys, delta, viewport} ({players, state} as game) =
     let playersWithDirection = mapInputs players keys
+        nextPlayers = map (updatePlayer delta viewport players) playersWithDirection
     in
-        { game | players = map (updatePlayer delta viewport) playersWithDirection
+        { game | players = nextPlayers
                , viewport = viewport
         }
 
 
-updatePlayer : Time -> (Int, Int) -> Player -> Player
-updatePlayer delta viewport player =
-    let
-        nextPlayer = stepPlayer delta player
-        h = Maybe.withDefault (0, 0) (head nextPlayer.path)
-        t = Maybe.withDefault [(1, 1)] (tail player.path)
-        hitSnake = any (snakeCollision h) t
-        hitWall = wallCollision h viewport
-        log = Debug.log "im dead" (hitSnake || hitWall)
-    in
-        if hitSnake || hitWall then
-            { player | alive = False }
-        else
-            nextPlayer
+updatePlayer : Time -> (Int, Int) -> List Player -> Player -> Player
+updatePlayer delta viewport allPlayers player =
+    if not player.alive then
+        player
+    else
+        let
+            nextPlayer = stepPlayer delta player
+            nextPos = Maybe.withDefault (0, 0) (head nextPlayer.path)
+            snakePaths = foldl (\p acc -> append p.path acc) [] allPlayers
+            hitSnake = any (snakeCollision nextPos) snakePaths
+            hitWall = wallCollision nextPos viewport
+        in
+            if hitSnake || hitWall then
+                { player | alive = False }
+            else
+                nextPlayer
 
 
 stepPlayer : Time -> Player -> Player
@@ -142,8 +148,8 @@ near n c m =
 
 snakeCollision : (Float, Float) -> (Float, Float) -> Bool
 snakeCollision (x1, y1) (x2, y2) =
-    near x1 2 x2
-    && near y1 2 y2
+    near x1 1.9 x2
+    && near y1 1.9 y2
 
 
 wallCollision : (Float, Float) -> (Int, Int) -> Bool
