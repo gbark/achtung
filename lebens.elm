@@ -6,127 +6,205 @@ import Keyboard
 import Debug
 import Char
 import Time exposing (..)
+import List exposing (..)
 import Set
 
 
-type alias Model =
-    { path : List (Float, Float)
-    , vx: Float
-    , vy: Float
-    , angle: Float
+type State = Play | Pause
+
+
+type alias Game =
+    { players: List Player
+    , state: State
+    , viewportSize: (Int, Int)
     }
 
 
-type Direction = Left | Right | Straight
+type alias Player =
+    { path: List (Float, Float)
+    , vx: Float
+    , vy: Float
+    , angle: Float
+    , direction: Direction
+    , alive: Bool
+    , score: Int
+    , color: Color
+    , leftKey: Char.KeyCode
+    , rightKey: Char.KeyCode
+    }
+
+
+type alias Input =
+    { space: Bool
+    --, directions: List Direction
+    , keys: Set.Set Char.KeyCode
+    , delta: Time
+    , viewportSize: (Int, Int)
+    }
+
+
+type Direction
+    = Left
+    | Right
+    | Straight
 
 
 maxAngleChange = 5
 speed = 100
 
 
-snake : Model
-snake =
-    { path = [(0, 0)]
+defaultPlayer : Player
+defaultPlayer =
+    { path = [(0, 0)] -- randomize
     , vx = 0
     , vy = 0
-    , angle = 90
+    , angle = 90 -- randomize
+    , direction = Straight
+    , alive = True
+    , score = 0
+    , color = rgb 74 167 43
+    , leftKey = (Char.toCode 'A')
+    , rightKey = (Char.toCode 'S')
     }
 
 
-update : (Time, Direction) -> Model -> Model
-update (dt, dir) snake =
-    let
-        newSnake = physicsUpdate dt (stepV snake dir)
-        head = Maybe.withDefault (0, 0) (List.head newSnake.path)
-        tail = Maybe.withDefault [(1, 1)] (List.tail snake.path)
+player2 : Player
+player2 =
+    { defaultPlayer | path = [(30, -30)]
+                    , angle = 95
+                    , color = rgb 60 100 60
+                    , leftKey = (Char.toCode 'K')
+                    , rightKey = (Char.toCode 'L')
+    }
+
+
+defaultGame : Game
+defaultGame =
+    { players = [defaultPlayer, player2]
+    , state = Play
+    , viewportSize = (0, 0)
+    }
+
+
+update : Input -> Game -> Game
+update {space, keys, delta, viewportSize} ({players, state} as game) =
+    let playersWithDirection = mapInputs players keys
     in
-        if List.any (colliding head) tail then
-            snake
+        { game | players = map (updatePlayer delta) playersWithDirection
+               , viewportSize = viewportSize
+        }
+
+
+updatePlayer : Time -> Player -> Player
+updatePlayer delta player =
+    let
+        nextPlayer = stepPlayer delta player
+        h = Maybe.withDefault (0, 0) (head nextPlayer.path)
+        t = Maybe.withDefault [(1, 1)] (tail player.path)
+    in
+        if any (colliding h) t then
+            player
         else
-            newSnake
+            nextPlayer
 
 
-physicsUpdate : Time -> Model -> Model
-physicsUpdate dt snake =
+stepPlayer : Time -> Player -> Player
+stepPlayer delta player =
     let
-        (x, y) = Maybe.withDefault (0, 0) (List.head snake.path)
-        nextX = x + snake.vx * (dt*speed)
-        nextY = y + snake.vy * (dt*speed)
-        newSnake = { snake |
-            path = (nextX, nextY) :: snake.path
-        }
+        (x, y) = Maybe.withDefault (0, 0) (head player.path)
+        nextAngle =
+            case player.direction of
+                Left ->
+                    player.angle + maxAngleChange
+                Right ->
+                    player.angle + -maxAngleChange
+                Straight ->
+                    player.angle
+        nextVx = cos (nextAngle * pi / 180)
+        nextVy = sin (nextAngle * pi / 180)
+        nextX = x + nextVx * (delta*speed)
+        nextY = y + nextVy * (delta*speed)
     in
-        newSnake
-
-
-stepV : Model -> Direction -> Model
-stepV snake dir =
-    let angle =
-        case dir of
-            Left ->
-                snake.angle + maxAngleChange
-            Right ->
-                snake.angle + -maxAngleChange
-            Straight ->
-                snake.angle
-    in
-        { snake |
-            vx = cos (angle * pi / 180),
-            vy = sin (angle * pi / 180),
-            angle = angle
+        { player | vx = nextVx
+                 , vy = nextVy
+                 , angle = nextAngle
+                 , path = (nextX, nextY) :: player.path
         }
 
 
--- are n and m near each other?
--- specifically are they within c of each other?
+-- are n and m within c of each other?
 near : Float -> Float -> Float -> Bool
 near n c m =
     m >= n-c && m <= n+c
 
 
--- is the snake within its tail?
 colliding : (Float, Float) -> (Float, Float) -> Bool
 colliding (x1, y1) (x2, y2) =
     near x1 2 x2
     && near y1 2 y2
 
 
-view : (Int, Int) -> Model -> Element
-view (w', h') snake =
+view : Game -> Element
+view game =
     let
+        (w', h') = game.viewportSize
         (w, h) = (toFloat w', toFloat h')
-
     in
         collage w' h'
-            [ rect w h
-                |> filled (rgb 000 000 000)
-            , traced (solid (rgb 74 167 43)) (path snake.path)
-            ]
+            (append
+                [ rect w h
+                    |> filled (rgb 000 000 000)
+                ] (map renderPlayer game.players)
+            )
+
+
+renderPlayer : Player -> Form
+renderPlayer player =
+    traced (solid player.color) (path player.path)
+
+
+mapInputs : List Player -> Set.Set Char.KeyCode -> List Player
+mapInputs players keys =
+    let directions = map (toDirection keys) players
+    in
+        map2 (\p d -> {p | direction = d}) players directions
+
+
+toDirection : Set.Set Char.KeyCode -> Player -> Direction
+toDirection keys player =
+    if Set.isEmpty keys then
+        Straight
+    else if Set.member player.leftKey keys
+         && Set.member player.rightKey keys then
+        Straight
+    else if Set.member player.leftKey keys then
+        Left
+    else if Set.member player.rightKey keys then
+        Right
+    else
+        Straight
 
 
 main : Signal Element
 main =
-    Signal.map2 view Window.dimensions (Signal.foldp update snake input)
+    Signal.map view gameState
 
 
-input : Signal (Time, Direction)
-input =
-    let
-        delta = Signal.map inSeconds (fps 35)
-        dir = Signal.map toDirection Keyboard.keysDown
-    in
-        Signal.sampleOn delta (Signal.map2 (,) delta dir)
+gameState : Signal Game
+gameState =
+    Signal.foldp update defaultGame (input defaultGame)
 
 
-toDirection : Set.Set Char.KeyCode -> Direction
-toDirection keys =
-    if Set.isEmpty keys then
-        Straight
-    else if Set.size keys > 1 then
-        Straight
-    else if Set.member (Char.toCode 'A') keys then
-        Left
-    else if Set.member (Char.toCode 'S') keys then
-        Right
-    else
-        Straight
+delta : Signal Time
+delta =
+    Signal.map inSeconds (fps 35)
+
+
+input : Game -> Signal Input
+input game =
+    Signal.sampleOn delta <|
+        Signal.map4 Input
+            Keyboard.space
+            Keyboard.keysDown
+            delta
+            Window.dimensions

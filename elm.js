@@ -7817,124 +7817,205 @@ Elm.Main.make = function (_elm) {
    $Time = Elm.Time.make(_elm),
    $Window = Elm.Window.make(_elm);
    var _op = {};
-   var view = F2(function (_p0,snake) {
-      var _p1 = _p0;
-      var _p4 = _p1._0;
-      var _p3 = _p1._1;
-      var _p2 = {ctor: "_Tuple2"
-                ,_0: $Basics.toFloat(_p4)
-                ,_1: $Basics.toFloat(_p3)};
-      var w = _p2._0;
-      var h = _p2._1;
+   var delta = A2($Signal.map,$Time.inSeconds,$Time.fps(35));
+   var renderPlayer = function (player) {
+      return A2($Graphics$Collage.traced,
+      $Graphics$Collage.solid(player.color),
+      $Graphics$Collage.path(player.path));
+   };
+   var view = function (game) {
+      var _p0 = game.viewportSize;
+      var w$ = _p0._0;
+      var h$ = _p0._1;
+      var _p1 = {ctor: "_Tuple2"
+                ,_0: $Basics.toFloat(w$)
+                ,_1: $Basics.toFloat(h$)};
+      var w = _p1._0;
+      var h = _p1._1;
       return A3($Graphics$Collage.collage,
-      _p4,
-      _p3,
+      w$,
+      h$,
+      A2($List.append,
       _U.list([A2($Graphics$Collage.filled,
-              A3($Color.rgb,0,0,0),
-              A2($Graphics$Collage.rect,w,h))
-              ,A2($Graphics$Collage.traced,
-              $Graphics$Collage.solid(A3($Color.rgb,74,167,43)),
-              $Graphics$Collage.path(snake.path))]));
-   });
+      A3($Color.rgb,0,0,0),
+      A2($Graphics$Collage.rect,w,h))]),
+      A2($List.map,renderPlayer,game.players)));
+   };
    var near = F3(function (n,c,m) {
       return _U.cmp(m,n - c) > -1 && _U.cmp(m,n + c) < 1;
    });
-   var colliding = F2(function (_p6,_p5) {
-      var _p7 = _p6;
-      var _p8 = _p5;
-      return A3(near,_p7._0,2,_p8._0) && A3(near,_p7._1,2,_p8._1);
+   var colliding = F2(function (_p3,_p2) {
+      var _p4 = _p3;
+      var _p5 = _p2;
+      return A3(near,_p4._0,2,_p5._0) && A3(near,_p4._1,2,_p5._1);
    });
-   var snake = {path: _U.list([{ctor: "_Tuple2",_0: 0,_1: 0}])
-               ,vx: 0
-               ,vy: 0
-               ,angle: 90};
    var speed = 100;
-   var physicsUpdate = F2(function (dt,snake) {
-      var _p9 = A2($Maybe.withDefault,
-      {ctor: "_Tuple2",_0: 0,_1: 0},
-      $List.head(snake.path));
-      var x = _p9._0;
-      var y = _p9._1;
-      var nextX = x + snake.vx * (dt * speed);
-      var nextY = y + snake.vy * (dt * speed);
-      var newSnake = _U.update(snake,
-      {path: A2($List._op["::"],
-      {ctor: "_Tuple2",_0: nextX,_1: nextY},
-      snake.path)});
-      return newSnake;
-   });
    var maxAngleChange = 5;
-   var stepV = F2(function (snake,dir) {
-      var angle = function () {
-         var _p10 = dir;
-         switch (_p10.ctor)
-         {case "Left": return snake.angle + maxAngleChange;
-            case "Right": return snake.angle + (0 - maxAngleChange);
-            default: return snake.angle;}
+   var stepPlayer = F2(function (delta,player) {
+      var nextAngle = function () {
+         var _p6 = player.direction;
+         switch (_p6.ctor)
+         {case "Left": return player.angle + maxAngleChange;
+            case "Right": return player.angle + (0 - maxAngleChange);
+            default: return player.angle;}
       }();
-      return _U.update(snake,
-      {vx: $Basics.cos(angle * $Basics.pi / 180)
-      ,vy: $Basics.sin(angle * $Basics.pi / 180)
-      ,angle: angle});
-   });
-   var update = F2(function (_p11,snake) {
-      var _p12 = _p11;
-      var tail = A2($Maybe.withDefault,
-      _U.list([{ctor: "_Tuple2",_0: 1,_1: 1}]),
-      $List.tail(snake.path));
-      var newSnake = A2(physicsUpdate,
-      _p12._0,
-      A2(stepV,snake,_p12._1));
-      var head = A2($Maybe.withDefault,
+      var nextVx = $Basics.cos(nextAngle * $Basics.pi / 180);
+      var nextVy = $Basics.sin(nextAngle * $Basics.pi / 180);
+      var _p7 = A2($Maybe.withDefault,
       {ctor: "_Tuple2",_0: 0,_1: 0},
-      $List.head(newSnake.path));
-      return A2($List.any,colliding(head),tail) ? snake : newSnake;
+      $List.head(player.path));
+      var x = _p7._0;
+      var y = _p7._1;
+      var nextX = x + nextVx * (delta * speed);
+      var nextY = y + nextVy * (delta * speed);
+      return _U.update(player,
+      {vx: nextVx
+      ,vy: nextVy
+      ,angle: nextAngle
+      ,path: A2($List._op["::"],
+      {ctor: "_Tuple2",_0: nextX,_1: nextY},
+      player.path)});
+   });
+   var updatePlayer = F2(function (delta,player) {
+      var t = A2($Maybe.withDefault,
+      _U.list([{ctor: "_Tuple2",_0: 1,_1: 1}]),
+      $List.tail(player.path));
+      var nextPlayer = A2(stepPlayer,delta,player);
+      var h = A2($Maybe.withDefault,
+      {ctor: "_Tuple2",_0: 0,_1: 0},
+      $List.head(nextPlayer.path));
+      return A2($List.any,colliding(h),t) ? player : nextPlayer;
    });
    var Straight = {ctor: "Straight"};
+   var defaultPlayer = {path: _U.list([{ctor: "_Tuple2"
+                                       ,_0: 0
+                                       ,_1: 0}])
+                       ,vx: 0
+                       ,vy: 0
+                       ,angle: 90
+                       ,direction: Straight
+                       ,alive: true
+                       ,score: 0
+                       ,color: A3($Color.rgb,74,167,43)
+                       ,leftKey: $Char.toCode(_U.chr("A"))
+                       ,rightKey: $Char.toCode(_U.chr("S"))};
+   var player2 = _U.update(defaultPlayer,
+   {path: _U.list([{ctor: "_Tuple2",_0: 30,_1: -30}])
+   ,angle: 95
+   ,color: A3($Color.rgb,60,100,60)
+   ,leftKey: $Char.toCode(_U.chr("K"))
+   ,rightKey: $Char.toCode(_U.chr("L"))});
    var Right = {ctor: "Right"};
    var Left = {ctor: "Left"};
-   var toDirection = function (keys) {
-      return $Set.isEmpty(keys) ? Straight : _U.cmp($Set.size(keys),
-      1) > 0 ? Straight : A2($Set.member,
-      $Char.toCode(_U.chr("A")),
+   var toDirection = F2(function (keys,player) {
+      return $Set.isEmpty(keys) ? Straight : A2($Set.member,
+      player.leftKey,
+      keys) && A2($Set.member,
+      player.rightKey,
+      keys) ? Straight : A2($Set.member,
+      player.leftKey,
       keys) ? Left : A2($Set.member,
-      $Char.toCode(_U.chr("S")),
+      player.rightKey,
       keys) ? Right : Straight;
-   };
-   var input = function () {
-      var dir = A2($Signal.map,toDirection,$Keyboard.keysDown);
-      var delta = A2($Signal.map,$Time.inSeconds,$Time.fps(35));
+   });
+   var mapInputs = F2(function (players,keys) {
+      var directions = A2($List.map,toDirection(keys),players);
+      return A3($List.map2,
+      F2(function (p,d) {    return _U.update(p,{direction: d});}),
+      players,
+      directions);
+   });
+   var update = F2(function (_p9,_p8) {
+      var _p10 = _p9;
+      var _p11 = _p8;
+      var playersWithDirection = A2(mapInputs,_p11.players,_p10.keys);
+      return _U.update(_p11,
+      {players: A2($List.map,
+      updatePlayer(_p10.delta),
+      playersWithDirection)
+      ,viewportSize: _p10.viewportSize});
+   });
+   var Input = F4(function (a,b,c,d) {
+      return {space: a,keys: b,delta: c,viewportSize: d};
+   });
+   var input = function (game) {
       return A2($Signal.sampleOn,
       delta,
-      A3($Signal.map2,
-      F2(function (v0,v1) {
-         return {ctor: "_Tuple2",_0: v0,_1: v1};
-      }),
+      A5($Signal.map4,
+      Input,
+      $Keyboard.space,
+      $Keyboard.keysDown,
       delta,
-      dir));
-   }();
-   var main = A3($Signal.map2,
-   view,
-   $Window.dimensions,
-   A3($Signal.foldp,update,snake,input));
-   var Model = F4(function (a,b,c,d) {
-      return {path: a,vx: b,vy: c,angle: d};
+      $Window.dimensions));
+   };
+   var Player = function (a) {
+      return function (b) {
+         return function (c) {
+            return function (d) {
+               return function (e) {
+                  return function (f) {
+                     return function (g) {
+                        return function (h) {
+                           return function (i) {
+                              return function (j) {
+                                 return {path: a
+                                        ,vx: b
+                                        ,vy: c
+                                        ,angle: d
+                                        ,direction: e
+                                        ,alive: f
+                                        ,score: g
+                                        ,color: h
+                                        ,leftKey: i
+                                        ,rightKey: j};
+                              };
+                           };
+                        };
+                     };
+                  };
+               };
+            };
+         };
+      };
+   };
+   var Game = F3(function (a,b,c) {
+      return {players: a,state: b,viewportSize: c};
    });
+   var Pause = {ctor: "Pause"};
+   var Play = {ctor: "Play"};
+   var defaultGame = {players: _U.list([defaultPlayer,player2])
+                     ,state: Play
+                     ,viewportSize: {ctor: "_Tuple2",_0: 0,_1: 0}};
+   var gameState = A3($Signal.foldp,
+   update,
+   defaultGame,
+   input(defaultGame));
+   var main = A2($Signal.map,view,gameState);
    return _elm.Main.values = {_op: _op
-                             ,Model: Model
+                             ,Play: Play
+                             ,Pause: Pause
+                             ,Game: Game
+                             ,Player: Player
+                             ,Input: Input
                              ,Left: Left
                              ,Right: Right
                              ,Straight: Straight
                              ,maxAngleChange: maxAngleChange
                              ,speed: speed
-                             ,snake: snake
+                             ,defaultPlayer: defaultPlayer
+                             ,player2: player2
+                             ,defaultGame: defaultGame
                              ,update: update
-                             ,physicsUpdate: physicsUpdate
-                             ,stepV: stepV
+                             ,updatePlayer: updatePlayer
+                             ,stepPlayer: stepPlayer
                              ,near: near
                              ,colliding: colliding
                              ,view: view
+                             ,renderPlayer: renderPlayer
+                             ,mapInputs: mapInputs
+                             ,toDirection: toDirection
                              ,main: main
-                             ,input: input
-                             ,toDirection: toDirection};
+                             ,gameState: gameState
+                             ,delta: delta
+                             ,input: input};
 };
