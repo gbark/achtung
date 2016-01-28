@@ -7841,7 +7841,7 @@ Elm.Main.make = function (_elm) {
       A2($Graphics$Collage.rect,w,h))]),
       A2($List.map,renderPlayer,game.players)));
    };
-   var wallCollision = F2(function (_p3,_p2) {
+   var hitWall = F2(function (_p3,_p2) {
       var _p4 = _p3;
       var _p8 = _p4._1;
       var _p7 = _p4._0;
@@ -7858,7 +7858,7 @@ Elm.Main.make = function (_elm) {
    var near = F3(function (n,c,m) {
       return _U.cmp(m,n - c) > -1 && _U.cmp(m,n + c) < 1;
    });
-   var snakeCollision = F2(function (_p10,_p9) {
+   var hitSnake = F2(function (_p10,_p9) {
       var _p11 = _p10;
       var _p12 = _p9;
       return A3(near,_p11._0,1.9,_p12._0) && A3(near,
@@ -7868,7 +7868,7 @@ Elm.Main.make = function (_elm) {
    });
    var speed = 100;
    var maxAngleChange = 5;
-   var stepPlayer = F2(function (delta,player) {
+   var move = F2(function (delta,player) {
       var nextAngle = function () {
          var _p13 = player.direction;
          switch (_p13.ctor)
@@ -7876,19 +7876,17 @@ Elm.Main.make = function (_elm) {
             case "Right": return player.angle + (0 - maxAngleChange);
             default: return player.angle;}
       }();
-      var nextVx = $Basics.cos(nextAngle * $Basics.pi / 180);
-      var nextVy = $Basics.sin(nextAngle * $Basics.pi / 180);
+      var vx = $Basics.cos(nextAngle * $Basics.pi / 180);
+      var vy = $Basics.sin(nextAngle * $Basics.pi / 180);
       var _p14 = A2($Maybe.withDefault,
       {ctor: "_Tuple2",_0: 0,_1: 0},
       $List.head(player.path));
       var x = _p14._0;
       var y = _p14._1;
-      var nextX = x + nextVx * (delta * speed);
-      var nextY = y + nextVy * (delta * speed);
+      var nextX = x + vx * (delta * speed);
+      var nextY = y + vy * (delta * speed);
       return _U.update(player,
-      {vx: nextVx
-      ,vy: nextVy
-      ,angle: nextAngle
+      {angle: nextAngle
       ,path: A2($List._op["::"],
       {ctor: "_Tuple2",_0: nextX,_1: nextY},
       player.path)});
@@ -7898,25 +7896,23 @@ Elm.Main.make = function (_elm) {
    allPlayers,
    player) {
       if ($Basics.not(player.alive)) return player; else {
-            var snakePaths = A3($List.foldl,
+            var paths = A3($List.foldl,
             F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
             _U.list([]),
             allPlayers);
-            var nextPlayer = A2(stepPlayer,delta,player);
-            var nextPos = A2($Maybe.withDefault,
+            var movedPlayer = A2(move,delta,player);
+            var newPos = A2($Maybe.withDefault,
             {ctor: "_Tuple2",_0: 0,_1: 0},
-            $List.head(nextPlayer.path));
-            var hitSnake = A2($List.any,snakeCollision(nextPos),snakePaths);
-            var hitWall = A2(wallCollision,nextPos,viewport);
-            return hitSnake || hitWall ? _U.update(player,
-            {alive: false}) : nextPlayer;
+            $List.head(movedPlayer.path));
+            var hs = A2($List.any,hitSnake(newPos),paths);
+            var hw = A2(hitWall,newPos,viewport);
+            return hs || hw ? _U.update(player,
+            {alive: false}) : movedPlayer;
          }
    });
    var Straight = {ctor: "Straight"};
    var defaultPlayer = {id: 1
                        ,path: _U.list([{ctor: "_Tuple2",_0: 0,_1: 0}])
-                       ,vx: 0
-                       ,vy: 0
                        ,angle: 90
                        ,direction: Straight
                        ,alive: true
@@ -7951,17 +7947,6 @@ Elm.Main.make = function (_elm) {
       players,
       directions);
    });
-   var update = F2(function (_p16,_p15) {
-      var _p17 = _p16;
-      var _p20 = _p17.viewport;
-      var _p18 = _p15;
-      var _p19 = _p18.players;
-      var playersWithDirection = A2(mapInputs,_p19,_p17.keys);
-      var nextPlayers = A2($List.map,
-      A3(updatePlayer,_p17.delta,_p20,_p19),
-      playersWithDirection);
-      return _U.update(_p18,{players: nextPlayers,viewport: _p20});
-   });
    var Input = F4(function (a,b,c,d) {
       return {space: a,keys: b,delta: c,viewport: d};
    });
@@ -7975,47 +7960,43 @@ Elm.Main.make = function (_elm) {
       delta,
       $Window.dimensions));
    };
-   var Player = function (a) {
-      return function (b) {
-         return function (c) {
-            return function (d) {
-               return function (e) {
-                  return function (f) {
-                     return function (g) {
-                        return function (h) {
-                           return function (i) {
-                              return function (j) {
-                                 return function (k) {
-                                    return {id: a
-                                           ,path: b
-                                           ,vx: c
-                                           ,vy: d
-                                           ,angle: e
-                                           ,direction: f
-                                           ,alive: g
-                                           ,score: h
-                                           ,color: i
-                                           ,leftKey: j
-                                           ,rightKey: k};
-                                 };
-                              };
-                           };
-                        };
-                     };
-                  };
-               };
-            };
-         };
-      };
-   };
+   var Player = F9(function (a,b,c,d,e,f,g,h,i) {
+      return {id: a
+             ,path: b
+             ,angle: c
+             ,direction: d
+             ,alive: e
+             ,score: f
+             ,color: g
+             ,leftKey: h
+             ,rightKey: i};
+   });
    var Game = F3(function (a,b,c) {
       return {players: a,state: b,viewport: c};
    });
    var Pause = {ctor: "Pause"};
-   var Play = {ctor: "Play"};
    var defaultGame = {players: _U.list([defaultPlayer,player2])
-                     ,state: Play
+                     ,state: Pause
                      ,viewport: {ctor: "_Tuple2",_0: 0,_1: 0}};
+   var Play = {ctor: "Play"};
+   var update = F2(function (_p16,_p15) {
+      var _p17 = _p16;
+      var _p21 = _p17.viewport;
+      var _p18 = _p15;
+      var _p20 = _p18.state;
+      var _p19 = _p18.players;
+      var newPlayers = _U.eq(_p20,Pause) ? _p19 : A2($List.map,
+      A3(updatePlayer,_p17.delta,_p21,_p19),
+      A2(mapInputs,_p19,_p17.keys));
+      var newState = _p17.space ? Play : _U.cmp($List.length(A2($List.filter,
+      function (p) {
+         return p.alive;
+      },
+      _p19)),
+      2) < 0 ? Pause : _p20;
+      return _U.update(_p18,
+      {players: newPlayers,viewport: _p21,state: newState});
+   });
    var gameState = A3($Signal.foldp,
    update,
    defaultGame,
@@ -8037,10 +8018,10 @@ Elm.Main.make = function (_elm) {
                              ,defaultGame: defaultGame
                              ,update: update
                              ,updatePlayer: updatePlayer
-                             ,stepPlayer: stepPlayer
+                             ,move: move
                              ,near: near
-                             ,snakeCollision: snakeCollision
-                             ,wallCollision: wallCollision
+                             ,hitSnake: hitSnake
+                             ,hitWall: hitWall
                              ,view: view
                              ,renderPlayer: renderPlayer
                              ,mapInputs: mapInputs

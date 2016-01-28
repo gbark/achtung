@@ -23,8 +23,6 @@ type alias Game =
 type alias Player =
     { id: Int
     , path: List (Float, Float)
-    , vx: Float
-    , vy: Float
     , angle: Float
     , direction: Direction
     , alive: Bool
@@ -57,8 +55,6 @@ defaultPlayer : Player
 defaultPlayer =
     { id = 1
     , path = [(0, 0)] -- randomize
-    , vx = 0
-    , vy = 0
     , angle = 90 -- randomize
     , direction = Straight
     , alive = True
@@ -83,18 +79,35 @@ player2 =
 defaultGame : Game
 defaultGame =
     { players = [defaultPlayer, player2]
-    , state = Play
+    , state = Pause
     , viewport = (0, 0)
     }
 
 
 update : Input -> Game -> Game
 update {space, keys, delta, viewport} ({players, state} as game) =
-    let playersWithDirection = mapInputs players keys
-        nextPlayers = map (updatePlayer delta viewport players) playersWithDirection
+    let
+        newState =
+            if space then
+                Play
+
+            else if (length (filter (\p -> p.alive) players) < 2) then
+                Pause
+
+            else
+                state
+
+        newPlayers =
+            if state == Pause then
+                players
+
+            else
+                map (updatePlayer delta viewport players) (mapInputs players keys)
+
     in
-        { game | players = nextPlayers
+        { game | players = newPlayers
                , viewport = viewport
+               , state = newState
         }
 
 
@@ -102,40 +115,47 @@ updatePlayer : Time -> (Int, Int) -> List Player -> Player -> Player
 updatePlayer delta viewport allPlayers player =
     if not player.alive then
         player
+
     else
         let
-            nextPlayer = stepPlayer delta player
-            nextPos = Maybe.withDefault (0, 0) (head nextPlayer.path)
-            snakePaths = foldl (\p acc -> append p.path acc) [] allPlayers
-            hitSnake = any (snakeCollision nextPos) snakePaths
-            hitWall = wallCollision nextPos viewport
+            movedPlayer = move delta player
+            newPos = Maybe.withDefault (0, 0) (head movedPlayer.path)
+            paths = foldl (\p acc -> append p.path acc) [] allPlayers
+            hs = any (hitSnake newPos) paths
+            hw = hitWall newPos viewport
+
         in
-            if hitSnake || hitWall then
+            if hs || hw then
                 { player | alive = False }
+
             else
-                nextPlayer
+                movedPlayer
 
 
-stepPlayer : Time -> Player -> Player
-stepPlayer delta player =
+move : Time -> Player -> Player
+move delta player =
     let
-        (x, y) = Maybe.withDefault (0, 0) (head player.path)
+        (x, y) =
+            Maybe.withDefault (0, 0) (head player.path)
+
         nextAngle =
             case player.direction of
                 Left ->
                     player.angle + maxAngleChange
+
                 Right ->
                     player.angle + -maxAngleChange
+
                 Straight ->
                     player.angle
-        nextVx = cos (nextAngle * pi / 180)
-        nextVy = sin (nextAngle * pi / 180)
-        nextX = x + nextVx * (delta*speed)
-        nextY = y + nextVy * (delta*speed)
+
+        vx = cos (nextAngle * pi / 180)
+        vy = sin (nextAngle * pi / 180)
+        nextX = x + vx * (delta * speed)
+        nextY = y + vy * (delta * speed)
+
     in
-        { player | vx = nextVx
-                 , vy = nextVy
-                 , angle = nextAngle
+        { player | angle = nextAngle
                  , path = (nextX, nextY) :: player.path
         }
 
@@ -146,14 +166,14 @@ near n c m =
     m >= n-c && m <= n+c
 
 
-snakeCollision : (Float, Float) -> (Float, Float) -> Bool
-snakeCollision (x1, y1) (x2, y2) =
+hitSnake : (Float, Float) -> (Float, Float) -> Bool
+hitSnake (x1, y1) (x2, y2) =
     near x1 1.9 x2
     && near y1 1.9 y2
 
 
-wallCollision : (Float, Float) -> (Int, Int) -> Bool
-wallCollision (x, y) (w', h') =
+hitWall : (Float, Float) -> (Int, Int) -> Bool
+hitWall (x, y) (w', h') =
     let (w, h) = (toFloat w', toFloat h')
     in
         if      x >= (w / 2)  then True
@@ -168,6 +188,7 @@ view game =
     let
         (w', h') = game.viewport
         (w, h) = (toFloat w', toFloat h')
+
     in
         collage w' h'
             (append
@@ -185,21 +206,24 @@ renderPlayer player =
 mapInputs : List Player -> Set.Set Char.KeyCode -> List Player
 mapInputs players keys =
     let directions = map (toDirection keys) players
-    in
-        map2 (\p d -> {p | direction = d}) players directions
+    in  map2 (\p d -> {p | direction = d}) players directions
 
 
 toDirection : Set.Set Char.KeyCode -> Player -> Direction
 toDirection keys player =
     if Set.isEmpty keys then
         Straight
+
     else if Set.member player.leftKey keys
          && Set.member player.rightKey keys then
         Straight
+
     else if Set.member player.leftKey keys then
         Left
+
     else if Set.member player.rightKey keys then
         Right
+
     else
         Straight
 
