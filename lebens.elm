@@ -16,7 +16,7 @@ type State = Play | Pause
 type alias Game =
     { players: List Player
     , state: State
-    , viewportSize: (Int, Int)
+    , viewport: (Int, Int)
     }
 
 
@@ -36,10 +36,9 @@ type alias Player =
 
 type alias Input =
     { space: Bool
-    --, directions: List Direction
     , keys: Set.Set Char.KeyCode
     , delta: Time
-    , viewportSize: (Int, Int)
+    , viewport: (Int, Int)
     }
 
 
@@ -82,28 +81,31 @@ defaultGame : Game
 defaultGame =
     { players = [defaultPlayer, player2]
     , state = Play
-    , viewportSize = (0, 0)
+    , viewport = (0, 0)
     }
 
 
 update : Input -> Game -> Game
-update {space, keys, delta, viewportSize} ({players, state} as game) =
+update {space, keys, delta, viewport} ({players, state} as game) =
     let playersWithDirection = mapInputs players keys
     in
-        { game | players = map (updatePlayer delta) playersWithDirection
-               , viewportSize = viewportSize
+        { game | players = map (updatePlayer delta viewport) playersWithDirection
+               , viewport = viewport
         }
 
 
-updatePlayer : Time -> Player -> Player
-updatePlayer delta player =
+updatePlayer : Time -> (Int, Int) -> Player -> Player
+updatePlayer delta viewport player =
     let
         nextPlayer = stepPlayer delta player
         h = Maybe.withDefault (0, 0) (head nextPlayer.path)
         t = Maybe.withDefault [(1, 1)] (tail player.path)
+        hitSnake = any (snakeCollision h) t
+        hitWall = wallCollision h viewport
+        log = Debug.log "im dead" (hitSnake || hitWall)
     in
-        if any (colliding h) t then
-            player
+        if hitSnake || hitWall then
+            { player | alive = False }
         else
             nextPlayer
 
@@ -138,16 +140,27 @@ near n c m =
     m >= n-c && m <= n+c
 
 
-colliding : (Float, Float) -> (Float, Float) -> Bool
-colliding (x1, y1) (x2, y2) =
+snakeCollision : (Float, Float) -> (Float, Float) -> Bool
+snakeCollision (x1, y1) (x2, y2) =
     near x1 2 x2
     && near y1 2 y2
+
+
+wallCollision : (Float, Float) -> (Int, Int) -> Bool
+wallCollision (x, y) (w', h') =
+    let (w, h) = (toFloat w', toFloat h')
+    in
+        if      x >= (w / 2)  then True
+        else if x <= -(w / 2) then True
+        else if y >= (h / 2)  then True
+        else if y <= -(h / 2) then True
+        else                       False
 
 
 view : Game -> Element
 view game =
     let
-        (w', h') = game.viewportSize
+        (w', h') = game.viewport
         (w, h) = (toFloat w', toFloat h')
     in
         collage w' h'
