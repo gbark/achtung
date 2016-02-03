@@ -8096,58 +8096,44 @@ Elm.Main.make = function (_elm) {
    $Window = Elm.Window.make(_elm);
    var _op = {};
    var delta = A2($Signal.map,$Time.inSeconds,$Time.fps(35));
-   var toGroups = F2(function (point,acc) {
-      var _p0 = acc;
-      if (_p0.ctor === "[]") {
-            return A2($List._op["::"],_U.list([point]),acc);
-         } else {
-            var _p6 = _p0._1;
-            var _p5 = _p0._0;
-            var _p1 = _p5;
-            if (_p1.ctor === "[]") {
-                  return A2($List._op["::"],_U.list([point]),acc);
-               } else {
-                  var _p2 = _p1._0;
-                  if (_p2.ctor === "Visible") {
-                        var _p3 = point;
-                        if (_p3.ctor === "Visible") {
-                              return A2($List._op["::"],A2($List._op["::"],point,_p5),_p6);
-                           } else {
-                              return A2($List._op["::"],_U.list([point]),acc);
-                           }
-                     } else {
-                        var _p4 = point;
-                        if (_p4.ctor === "Visible") {
-                              return A2($List._op["::"],_U.list([point]),acc);
-                           } else {
-                              return A2($List._op["::"],A2($List._op["::"],point,_p5),_p6);
-                           }
-                     }
-               }
-         }
-   });
    var isVisible = function (point) {
-      var _p7 = point;
-      if (_p7.ctor === "Visible") {
+      var _p0 = point;
+      if (_p0.ctor === "Visible") {
             return true;
          } else {
             return false;
          }
    };
+   var toGroups = F2(function (point,acc) {
+      var _p1 = acc;
+      if (_p1.ctor === "[]") {
+            return A2($List._op["::"],_U.list([point]),acc);
+         } else {
+            var _p3 = _p1._0;
+            var _p2 = _p3;
+            if (_p2.ctor === "[]") {
+                  return A2($List._op["::"],_U.list([point]),acc);
+               } else {
+                  return isVisible(_p2._0) && isVisible(point) ? A2($List._op["::"],
+                  A2($List._op["::"],point,_p3),
+                  _p1._1) : A2($List._op["::"],_U.list([point]),acc);
+               }
+         }
+   });
    var isGroupOfVisibles = function (points) {
-      var _p8 = points;
-      if (_p8.ctor === "[]") {
+      var _p4 = points;
+      if (_p4.ctor === "[]") {
             return false;
          } else {
-            return isVisible(_p8._0);
+            return isVisible(_p4._0);
          }
    };
    var asXY = function (point) {
-      var _p9 = point;
-      if (_p9.ctor === "Visible") {
-            return {ctor: "_Tuple2",_0: _p9._0._0,_1: _p9._0._1};
+      var _p5 = point;
+      if (_p5.ctor === "Visible") {
+            return {ctor: "_Tuple2",_0: _p5._0._0,_1: _p5._0._1};
          } else {
-            return {ctor: "_Tuple2",_0: _p9._0._0,_1: _p9._0._1};
+            return {ctor: "_Tuple2",_0: _p5._0._0,_1: _p5._0._1};
          }
    };
    var renderPlayer = function (player) {
@@ -8169,14 +8155,14 @@ Elm.Main.make = function (_elm) {
    };
    var view = function (game) {
       var lines = A2($List.map,renderPlayer,game.players);
-      var _p10 = game.viewport;
-      var w$ = _p10._0;
-      var h$ = _p10._1;
-      var _p11 = {ctor: "_Tuple2"
-                 ,_0: $Basics.toFloat(w$)
-                 ,_1: $Basics.toFloat(h$)};
-      var w = _p11._0;
-      var h = _p11._1;
+      var _p6 = game.viewport;
+      var w$ = _p6._0;
+      var h$ = _p6._1;
+      var _p7 = {ctor: "_Tuple2"
+                ,_0: $Basics.toFloat(w$)
+                ,_1: $Basics.toFloat(h$)};
+      var w = _p7._0;
+      var h = _p7._1;
       return A3($Graphics$Collage.collage,
       w$,
       h$,
@@ -8186,20 +8172,20 @@ Elm.Main.make = function (_elm) {
       A2($Graphics$Collage.rect,w,h))]),
       $List.concat(lines)));
    };
-   var hitWall = F2(function (point,_p12) {
-      var _p13 = _p12;
-      var _p14 = {ctor: "_Tuple2"
-                 ,_0: $Basics.toFloat(_p13._0)
-                 ,_1: $Basics.toFloat(_p13._1)};
-      var w = _p14._0;
-      var h = _p14._1;
-      var _p15 = point;
-      if (_p15.ctor === "Visible") {
-            var _p17 = _p15._0._1;
-            var _p16 = _p15._0._0;
-            return _U.cmp(_p16,w / 2) > -1 ? true : _U.cmp(_p16,
-            0 - w / 2) < 1 ? true : _U.cmp(_p17,
-            h / 2) > -1 ? true : _U.cmp(_p17,0 - h / 2) < 1 ? true : false;
+   var hitWall = F2(function (point,_p8) {
+      var _p9 = _p8;
+      var _p10 = {ctor: "_Tuple2"
+                 ,_0: $Basics.toFloat(_p9._0)
+                 ,_1: $Basics.toFloat(_p9._1)};
+      var w = _p10._0;
+      var h = _p10._1;
+      var _p11 = point;
+      if (_p11.ctor === "Visible") {
+            var _p13 = _p11._0._1;
+            var _p12 = _p11._0._0;
+            return _U.cmp(_p12,w / 2) > -1 ? true : _U.cmp(_p12,
+            0 - w / 2) < 1 ? true : _U.cmp(_p13,
+            h / 2) > -1 ? true : _U.cmp(_p13,0 - h / 2) < 1 ? true : false;
          } else {
             return false;
          }
@@ -8208,44 +8194,44 @@ Elm.Main.make = function (_elm) {
       return _U.cmp(m,n - c) > -1 && _U.cmp(m,n + c) < 1;
    });
    var hitSnake = F2(function (point1,point2) {
-      var _p18 = asXY(point2);
-      var x2 = _p18._0;
-      var y2 = _p18._1;
-      var _p19 = asXY(point1);
-      var x1 = _p19._0;
-      var y1 = _p19._1;
+      var _p14 = asXY(point2);
+      var x2 = _p14._0;
+      var y2 = _p14._1;
+      var _p15 = asXY(point1);
+      var x1 = _p15._0;
+      var y1 = _p15._1;
       return A3(near,x1,1.9,x2) && A3(near,y1,1.9,y2);
    });
-   var randomPoint = F2(function (seedInt,_p20) {
-      var _p21 = _p20;
-      var _p25 = _p21._0;
-      var _p24 = _p21._1;
+   var randomPoint = F2(function (seedInt,_p16) {
+      var _p17 = _p16;
+      var _p21 = _p17._0;
+      var _p20 = _p17._1;
       var seed = $Random.initialSeed(seedInt);
-      var _p22 = A2($Random.generate,
-      A2($Random.$int,_p25 / 2 | 0,0 - (_p25 / 2 | 0)),
+      var _p18 = A2($Random.generate,
+      A2($Random.$int,_p21 / 2 | 0,0 - (_p21 / 2 | 0)),
       seed);
-      var x = _p22._0;
-      var _p23 = A2($Random.generate,
-      A2($Random.$int,_p24 / 2 | 0,0 - (_p24 / 2 | 0)),
+      var x = _p18._0;
+      var _p19 = A2($Random.generate,
+      A2($Random.$int,_p20 / 2 | 0,0 - (_p20 / 2 | 0)),
       seed);
-      var y = _p23._0;
+      var y = _p19._0;
       return {ctor: "_Tuple2"
              ,_0: $Basics.toFloat(x)
              ,_1: $Basics.toFloat(y)};
    });
    var randomAngle = function (seedInt) {
       var seed = $Random.initialSeed(seedInt);
-      var _p26 = A2($Random.generate,A2($Random.$int,0,360),seed);
-      var n = _p26._0;
+      var _p22 = A2($Random.generate,A2($Random.$int,0,360),seed);
+      var n = _p22._0;
       return $Basics.toFloat(n);
    };
    var randomHole = function (seedInt) {
       var seed = $Random.initialSeed(seedInt);
-      var _p27 = A2($Random.generate,A2($Random.$int,0,150),seed);
-      var n = _p27._0;
+      var _p23 = A2($Random.generate,A2($Random.$int,0,150),seed);
+      var n = _p23._0;
       if (_U.eq(n,1)) {
-            var _p28 = A2($Random.generate,A2($Random.$int,5,25),seed);
-            var length = _p28._0;
+            var _p24 = A2($Random.generate,A2($Random.$int,5,25),seed);
+            var length = _p24._0;
             return length;
          } else return 0;
    };
@@ -8265,8 +8251,8 @@ Elm.Main.make = function (_elm) {
       var visibility = _U.cmp(player.hole,
       0) > 0 ? Hidden : Visible;
       var nextAngle = function () {
-         var _p29 = player.direction;
-         switch (_p29.ctor)
+         var _p25 = player.direction;
+         switch (_p25.ctor)
          {case "Left": return player.angle + maxAngleChange;
             case "Right": return player.angle + (0 - maxAngleChange);
             default: return player.angle;}
@@ -8276,16 +8262,9 @@ Elm.Main.make = function (_elm) {
       var point = A2($Maybe.withDefault,
       Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
       $List.head(player.path));
-      var _p30 = function () {
-         var _p31 = point;
-         if (_p31.ctor === "Visible") {
-               return _p31._0;
-            } else {
-               return _p31._0;
-            }
-      }();
-      var x = _p30._0;
-      var y = _p30._1;
+      var _p26 = asXY(point);
+      var x = _p26._0;
+      var y = _p26._1;
       var nextX = x + vx * (delta * speed);
       var nextHole = _U.cmp(player.hole,
       0) < 0 ? randomHole($Basics.truncate(nextX)) : player.hole - 1;
@@ -8412,23 +8391,23 @@ Elm.Main.make = function (_elm) {
                      ,state: Pause
                      ,viewport: {ctor: "_Tuple2",_0: 0,_1: 0}};
    var Play = {ctor: "Play"};
-   var update = F2(function (_p33,_p32) {
-      var _p34 = _p33;
-      var _p38 = _p34.viewport;
-      var _p35 = _p32;
-      var _p37 = _p35.state;
-      var _p36 = _p35.players;
-      var newPlayers = _U.eq(_p37,Pause) ? _p36 : A2($List.map,
-      A4(updatePlayer,_p34.delta,_p38,_p34.time,_p36),
-      A2(mapInputs,_p36,_p34.keys));
-      var newState = _p34.space ? Play : _U.cmp($List.length(A2($List.filter,
+   var update = F2(function (_p28,_p27) {
+      var _p29 = _p28;
+      var _p33 = _p29.viewport;
+      var _p30 = _p27;
+      var _p32 = _p30.state;
+      var _p31 = _p30.players;
+      var newPlayers = _U.eq(_p32,Pause) ? _p31 : A2($List.map,
+      A4(updatePlayer,_p29.delta,_p33,_p29.time,_p31),
+      A2(mapInputs,_p31,_p29.keys));
+      var newState = _p29.space ? Play : _U.cmp($List.length(A2($List.filter,
       function (p) {
          return p.alive;
       },
-      _p36)),
-      2) < 0 ? Pause : _p37;
-      return _U.update(_p35,
-      {players: newPlayers,viewport: _p38,state: newState});
+      _p31)),
+      2) < 0 ? Pause : _p32;
+      return _U.update(_p30,
+      {players: newPlayers,viewport: _p33,state: newState});
    });
    var gameState = A3($Signal.foldp,
    update,

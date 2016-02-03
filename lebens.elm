@@ -11,6 +11,9 @@ import Set
 import Random
 
 
+-- MODEL
+
+
 type State = Play | Pause
 
 
@@ -89,6 +92,9 @@ defaultGame =
     }
 
 
+-- UPDATE
+
+
 update : Input -> Game -> Game
 update {space, keys, delta, viewport, time} ({players, state} as game) =
     let
@@ -158,12 +164,7 @@ move delta player =
     let
         point = Maybe.withDefault (Visible (0, 0)) (head player.path)
         (x, y) =
-            case point of
-                Visible p ->
-                    p
-
-                Hidden p ->
-                    p
+            asXY point
 
         nextAngle =
             case player.direction of
@@ -285,6 +286,9 @@ hitWall point (w', h') =
                 False
 
 
+-- VIEW
+
+
 view : Game -> Element
 view game =
     let
@@ -325,6 +329,9 @@ renderPlayer player =
         map (\pts -> traced lineStyle (path pts)) points
 
 
+-- HELPERS
+
+
 asXY : Point (Float, Float) -> (Float, Float)
 asXY point =
     case point of
@@ -352,11 +359,11 @@ isVisible point =
             False
 
 
+-- Usage:
+--
 -- foldr toGroups [] [Visible (0,1), Visible (0,2), Hidden (0,3), Hidden (0,4), Visible (0,5)]
 -- ->
 -- [[Visible (0,1), Visible (0,2)], [Hidden (0,3) ,Hidden (0,4)], [Visible (0,5)]]
---
--- TODO: Make this less of a mind f@%*
 toGroups : Point (Float, Float) -> List (List (Point (Float, Float))) -> List (List (Point (Float, Float)))
 toGroups point acc =
     case acc of
@@ -369,22 +376,12 @@ toGroups point acc =
                     [point] :: acc
 
                 y :: ys ->
-                    case y of
-                        Visible _ ->
-                            case point of
-                                Visible _ ->
-                                    (point :: x) :: xs
+                    if isVisible y && isVisible point then
+                        (point :: x) :: xs
 
-                                Hidden _ ->
-                                    [point] :: acc
+                    else
+                        [point] :: acc
 
-                        Hidden _ ->
-                            case point of
-                                Visible _ ->
-                                    [point] :: acc
-
-                                Hidden _ ->
-                                    (point :: x) :: xs
 
 
 mapInputs : List Player -> Set.Set Char.KeyCode -> List Player
@@ -413,6 +410,9 @@ toDirection keys player =
 
     else
         Straight
+
+
+-- SIGNALS
 
 
 main : Signal Element
