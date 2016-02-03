@@ -8,6 +8,7 @@ import Char
 import Time exposing (..)
 import List exposing (..)
 import Set
+import Random
 
 
 type State = Play | Pause
@@ -22,7 +23,7 @@ type alias Game =
 
 type alias Player =
     { id: Int
-    , path: List (Float, Float)
+    , path: List (Point (Float, Float))
     , angle: Float
     , direction: Direction
     , alive: Bool
@@ -30,6 +31,7 @@ type alias Player =
     , color: Color
     , leftKey: Char.KeyCode
     , rightKey: Char.KeyCode
+    , hole: Int
     }
 
 
@@ -38,6 +40,7 @@ type alias Input =
     , keys: Set.Set Char.KeyCode
     , delta: Time
     , viewport: (Int, Int)
+    , time: Time
     }
 
 
@@ -47,6 +50,9 @@ type Direction
     | Straight
 
 
+type Point a = Visible a | Hidden a
+
+
 maxAngleChange = 5
 speed = 100
 
@@ -54,25 +60,24 @@ speed = 100
 defaultPlayer : Player
 defaultPlayer =
     { id = 1
-    , path = [(0, 0)] -- randomize
-    , angle = 90 -- randomize
+    , path = []
+    , angle = 0
     , direction = Straight
     , alive = True
     , score = 0
     , color = rgb 74 167 43
     , leftKey = (Char.toCode 'A')
     , rightKey = (Char.toCode 'S')
+    , hole = 0
     }
 
 
 player2 : Player
 player2 =
     { defaultPlayer | id = 2
-                    , path = [(30, -30)]
-                    , angle = 95
                     , color = rgb 60 100 60
-                    , leftKey = (Char.toCode 'K')
-                    , rightKey = (Char.toCode 'L')
+                    , leftKey = 37
+                    , rightKey = 39
     }
 
 
@@ -85,7 +90,7 @@ defaultGame =
 
 
 update : Input -> Game -> Game
-update {space, keys, delta, viewport} ({players, state} as game) =
+update {space, keys, delta, viewport, time} ({players, state} as game) =
     let
         newState =
             if space then
@@ -102,7 +107,8 @@ update {space, keys, delta, viewport} ({players, state} as game) =
                 players
 
             else
-                map (updatePlayer delta viewport players) (mapInputs players keys)
+                map (updatePlayer delta viewport time players)
+                    (mapInputs players keys)
 
     in
         { game | players = newPlayers
@@ -111,17 +117,32 @@ update {space, keys, delta, viewport} ({players, state} as game) =
         }
 
 
-updatePlayer : Time -> (Int, Int) -> List Player -> Player -> Player
-updatePlayer delta viewport allPlayers player =
+initPlayer : Player -> (Int, Int) -> Time -> Player
+initPlayer player viewport time =
+    let
+        seed = (truncate (inMilliseconds time)) + player.id
+
+    in
+        { player | angle = randomAngle seed
+                 , path = [Visible (randomPoint seed viewport)]
+        }
+
+
+updatePlayer : Time -> (Int, Int) -> Time -> List Player -> Player -> Player
+updatePlayer delta viewport time allPlayers player =
     if not player.alive then
         player
+
+    else if length player.path < 1 then
+        initPlayer player viewport time
 
     else
         let
             movedPlayer = move delta player
-            newPos = Maybe.withDefault (0, 0) (head movedPlayer.path)
+            newPos = Maybe.withDefault (Visible (0, 0)) (head movedPlayer.path)
             paths = foldl (\p acc -> append p.path acc) [] allPlayers
-            hs = any (hitSnake newPos) paths
+            visibles = filter (\p -> isVisible p) paths
+            hs = any (hitSnake newPos) visibles
             hw = hitWall newPos viewport
 
         in
@@ -135,8 +156,14 @@ updatePlayer delta viewport allPlayers player =
 move : Time -> Player -> Player
 move delta player =
     let
+        point = Maybe.withDefault (Visible (0, 0)) (head player.path)
         (x, y) =
-            Maybe.withDefault (0, 0) (head player.path)
+            case point of
+                Visible p ->
+                    p
+
+                Hidden p ->
+                    p
 
         nextAngle =
             case player.direction of
@@ -154,10 +181,71 @@ move delta player =
         nextX = x + vx * (delta * speed)
         nextY = y + vy * (delta * speed)
 
+        visibility =
+            if player.hole > 0 then Hidden else Visible
+
+        nextHole =
+            if player.hole < 0 then
+                randomHole (truncate nextX)
+            else
+                player.hole - 1
+
     in
         { player | angle = nextAngle
-                 , path = (nextX, nextY) :: player.path
+                 , path = visibility (nextX, nextY) :: player.path
+                 , hole = nextHole
         }
+
+
+randomHole : Int -> Int
+randomHole seedInt =
+    let
+        seed =
+            Random.initialSeed seedInt
+
+        (n, _) =
+            Random.generate (Random.int 0 150) seed
+
+    in
+        if n == 1 then
+            let
+                (length, _) =
+                    Random.generate (Random.int 5 25) seed
+
+            in
+                length
+
+        else
+            0
+
+
+randomAngle : Int -> Float
+randomAngle seedInt =
+    let
+        seed =
+            Random.initialSeed seedInt
+
+        (n, _) =
+            Random.generate (Random.int 0 360) seed
+
+    in
+        toFloat n
+
+
+randomPoint : Int -> (Int, Int) -> (Float, Float)
+randomPoint seedInt (w, h) =
+    let
+        seed =
+            Random.initialSeed seedInt
+
+        (x, _) =
+            Random.generate (Random.int (w // 2) -(w // 2)) seed
+
+        (y, _) =
+            Random.generate (Random.int (h // 2) -(h // 2)) seed
+
+    in
+        (toFloat x, toFloat y)
 
 
 -- are n and m within c of each other?
@@ -166,47 +254,146 @@ near n c m =
     m >= n-c && m <= n+c
 
 
-hitSnake : (Float, Float) -> (Float, Float) -> Bool
-hitSnake (x1, y1) (x2, y2) =
-    near x1 1.9 x2
-    && near y1 1.9 y2
+hitSnake : Point (Float, Float) -> Point (Float, Float) -> Bool
+hitSnake point1 point2 =
+    let
+        (x1, y1) =
+            asXY point1
 
+        (x2, y2) =
+            asXY point2
 
-hitWall : (Float, Float) -> (Int, Int) -> Bool
-hitWall (x, y) (w', h') =
-    let (w, h) = (toFloat w', toFloat h')
     in
-        if      x >= (w / 2)  then True
-        else if x <= -(w / 2) then True
-        else if y >= (h / 2)  then True
-        else if y <= -(h / 2) then True
-        else                       False
+        near x1 1.9 x2
+        && near y1 1.9 y2
+
+
+hitWall : Point (Float, Float) -> (Int, Int) -> Bool
+hitWall point (w', h') =
+    let (w, h) = (toFloat w', toFloat h')
+
+    in
+        case point of
+            Visible (x, y) ->
+                if      x >= (w / 2)  then True
+                else if x <= -(w / 2) then True
+                else if y >= (h / 2)  then True
+                else if y <= -(h / 2) then True
+                else                       False
+
+            Hidden _ ->
+                False
 
 
 view : Game -> Element
 view game =
     let
-        (w', h') = game.viewport
-        (w, h) = (toFloat w', toFloat h')
+        (w', h') =
+            game.viewport
+
+        (w, h) =
+            (toFloat w', toFloat h')
+
+        lines =
+            (map renderPlayer game.players)
 
     in
         collage w' h'
             (append
                 [ rect w h
                     |> filled (rgb 000 000 000)
-                ] (map renderPlayer game.players)
+                ] (concat lines)
             )
 
 
-renderPlayer : Player -> Form
+renderPlayer : Player -> List Form
 renderPlayer player =
-    traced (solid player.color) (path player.path)
+    let
+        coords =
+            foldr toGroups [] player.path
+
+        lineStyle =
+            solid player.color
+
+        visibleCoords =
+            filter isGroupOfVisibles coords
+
+        points =
+            map (\pts -> map asXY pts) visibleCoords
+
+    in
+        map (\pts -> traced lineStyle (path pts)) points
+
+
+asXY : Point (Float, Float) -> (Float, Float)
+asXY point =
+    case point of
+        Visible (x, y) -> (x, y)
+        Hidden (x, y) -> (x, y)
+
+
+isGroupOfVisibles : List (Point (Float, Float)) -> Bool
+isGroupOfVisibles points =
+    case points of
+        [] ->
+            False
+
+        p :: _ ->
+            isVisible p
+
+
+isVisible : Point (Float, Float) -> Bool
+isVisible point =
+    case point of
+        Visible _ ->
+            True
+
+        Hidden _ ->
+            False
+
+
+-- foldr toGroups [] [Visible (0,1), Visible (0,2), Hidden (0,3), Hidden (0,4), Visible (0,5)]
+-- ->
+-- [[Visible (0,1), Visible (0,2)], [Hidden (0,3) ,Hidden (0,4)], [Visible (0,5)]]
+--
+-- TODO: Make this less of a mind f@%*
+toGroups : Point (Float, Float) -> List (List (Point (Float, Float))) -> List (List (Point (Float, Float)))
+toGroups point acc =
+    case acc of
+        [] ->
+            [point] :: acc
+
+        x :: xs ->
+            case x of
+                [] ->
+                    [point] :: acc
+
+                y :: ys ->
+                    case y of
+                        Visible _ ->
+                            case point of
+                                Visible _ ->
+                                    (point :: x) :: xs
+
+                                Hidden _ ->
+                                    [point] :: acc
+
+                        Hidden _ ->
+                            case point of
+                                Visible _ ->
+                                    [point] :: acc
+
+                                Hidden _ ->
+                                    (point :: x) :: xs
 
 
 mapInputs : List Player -> Set.Set Char.KeyCode -> List Player
 mapInputs players keys =
-    let directions = map (toDirection keys) players
-    in  map2 (\p d -> {p | direction = d}) players directions
+    let directions =
+        map (toDirection keys) players
+
+    in
+        map2 (\p d -> {p | direction = d}) players directions
 
 
 toDirection : Set.Set Char.KeyCode -> Player -> Direction
@@ -246,8 +433,9 @@ delta =
 input : Game -> Signal Input
 input game =
     Signal.sampleOn delta <|
-        Signal.map4 Input
+        Signal.map5 Input
             Keyboard.space
             Keyboard.keysDown
             delta
             Window.dimensions
+            (every millisecond)

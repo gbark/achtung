@@ -7778,6 +7778,283 @@ Elm.Native.Window.make = function make(localRuntime) {
 	};
 };
 
+Elm.Random = Elm.Random || {};
+Elm.Random.make = function (_elm) {
+   "use strict";
+   _elm.Random = _elm.Random || {};
+   if (_elm.Random.values) return _elm.Random.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $List = Elm.List.make(_elm);
+   var _op = {};
+   var magicNum8 = 2147483562;
+   var range = function (_p0) {
+      return {ctor: "_Tuple2",_0: 0,_1: magicNum8};
+   };
+   var magicNum7 = 2137383399;
+   var magicNum6 = 2147483563;
+   var magicNum5 = 3791;
+   var magicNum4 = 40692;
+   var magicNum3 = 52774;
+   var magicNum2 = 12211;
+   var magicNum1 = 53668;
+   var magicNum0 = 40014;
+   var generate = F2(function (_p1,seed) {
+      var _p2 = _p1;
+      return _p2._0(seed);
+   });
+   var Seed = function (a) {    return {ctor: "Seed",_0: a};};
+   var State = F2(function (a,b) {
+      return {ctor: "State",_0: a,_1: b};
+   });
+   var initState = function (s$) {
+      var s = A2($Basics.max,s$,0 - s$);
+      var q = s / (magicNum6 - 1) | 0;
+      var s2 = A2($Basics._op["%"],q,magicNum7 - 1);
+      var s1 = A2($Basics._op["%"],s,magicNum6 - 1);
+      return A2(State,s1 + 1,s2 + 1);
+   };
+   var next = function (_p3) {
+      var _p4 = _p3;
+      var _p6 = _p4._1;
+      var _p5 = _p4._0;
+      var k$ = _p6 / magicNum3 | 0;
+      var s2$ = magicNum4 * (_p6 - k$ * magicNum3) - k$ * magicNum5;
+      var s2$$ = _U.cmp(s2$,0) < 0 ? s2$ + magicNum7 : s2$;
+      var k = _p5 / magicNum1 | 0;
+      var s1$ = magicNum0 * (_p5 - k * magicNum1) - k * magicNum2;
+      var s1$$ = _U.cmp(s1$,0) < 0 ? s1$ + magicNum6 : s1$;
+      var z = s1$$ - s2$$;
+      var z$ = _U.cmp(z,1) < 0 ? z + magicNum8 : z;
+      return {ctor: "_Tuple2",_0: z$,_1: A2(State,s1$$,s2$$)};
+   };
+   var split = function (_p7) {
+      var _p8 = _p7;
+      var _p11 = _p8._1;
+      var _p10 = _p8._0;
+      var _p9 = $Basics.snd(next(_p8));
+      var t1 = _p9._0;
+      var t2 = _p9._1;
+      var new_s2 = _U.eq(_p11,1) ? magicNum7 - 1 : _p11 - 1;
+      var new_s1 = _U.eq(_p10,magicNum6 - 1) ? 1 : _p10 + 1;
+      return {ctor: "_Tuple2"
+             ,_0: A2(State,new_s1,t2)
+             ,_1: A2(State,t1,new_s2)};
+   };
+   var initialSeed = function (n) {
+      return Seed({state: initState(n)
+                  ,next: next
+                  ,split: split
+                  ,range: range});
+   };
+   var Generator = function (a) {
+      return {ctor: "Generator",_0: a};
+   };
+   var andThen = F2(function (_p12,callback) {
+      var _p13 = _p12;
+      return Generator(function (seed) {
+         var _p14 = _p13._0(seed);
+         var result = _p14._0;
+         var newSeed = _p14._1;
+         var _p15 = callback(result);
+         var genB = _p15._0;
+         return genB(newSeed);
+      });
+   });
+   var map5 = F6(function (func,_p20,_p19,_p18,_p17,_p16) {
+      var _p21 = _p20;
+      var _p22 = _p19;
+      var _p23 = _p18;
+      var _p24 = _p17;
+      var _p25 = _p16;
+      return Generator(function (seed0) {
+         var _p26 = _p21._0(seed0);
+         var a = _p26._0;
+         var seed1 = _p26._1;
+         var _p27 = _p22._0(seed1);
+         var b = _p27._0;
+         var seed2 = _p27._1;
+         var _p28 = _p23._0(seed2);
+         var c = _p28._0;
+         var seed3 = _p28._1;
+         var _p29 = _p24._0(seed3);
+         var d = _p29._0;
+         var seed4 = _p29._1;
+         var _p30 = _p25._0(seed4);
+         var e = _p30._0;
+         var seed5 = _p30._1;
+         return {ctor: "_Tuple2",_0: A5(func,a,b,c,d,e),_1: seed5};
+      });
+   });
+   var map4 = F5(function (func,_p34,_p33,_p32,_p31) {
+      var _p35 = _p34;
+      var _p36 = _p33;
+      var _p37 = _p32;
+      var _p38 = _p31;
+      return Generator(function (seed0) {
+         var _p39 = _p35._0(seed0);
+         var a = _p39._0;
+         var seed1 = _p39._1;
+         var _p40 = _p36._0(seed1);
+         var b = _p40._0;
+         var seed2 = _p40._1;
+         var _p41 = _p37._0(seed2);
+         var c = _p41._0;
+         var seed3 = _p41._1;
+         var _p42 = _p38._0(seed3);
+         var d = _p42._0;
+         var seed4 = _p42._1;
+         return {ctor: "_Tuple2",_0: A4(func,a,b,c,d),_1: seed4};
+      });
+   });
+   var map3 = F4(function (func,_p45,_p44,_p43) {
+      var _p46 = _p45;
+      var _p47 = _p44;
+      var _p48 = _p43;
+      return Generator(function (seed0) {
+         var _p49 = _p46._0(seed0);
+         var a = _p49._0;
+         var seed1 = _p49._1;
+         var _p50 = _p47._0(seed1);
+         var b = _p50._0;
+         var seed2 = _p50._1;
+         var _p51 = _p48._0(seed2);
+         var c = _p51._0;
+         var seed3 = _p51._1;
+         return {ctor: "_Tuple2",_0: A3(func,a,b,c),_1: seed3};
+      });
+   });
+   var map2 = F3(function (func,_p53,_p52) {
+      var _p54 = _p53;
+      var _p55 = _p52;
+      return Generator(function (seed0) {
+         var _p56 = _p54._0(seed0);
+         var a = _p56._0;
+         var seed1 = _p56._1;
+         var _p57 = _p55._0(seed1);
+         var b = _p57._0;
+         var seed2 = _p57._1;
+         return {ctor: "_Tuple2",_0: A2(func,a,b),_1: seed2};
+      });
+   });
+   var map = F2(function (func,_p58) {
+      var _p59 = _p58;
+      return Generator(function (seed0) {
+         var _p60 = _p59._0(seed0);
+         var a = _p60._0;
+         var seed1 = _p60._1;
+         return {ctor: "_Tuple2",_0: func(a),_1: seed1};
+      });
+   });
+   var listHelp = F4(function (list,n,generate,seed) {
+      listHelp: while (true) if (_U.cmp(n,1) < 0)
+      return {ctor: "_Tuple2",_0: $List.reverse(list),_1: seed};
+      else {
+            var _p61 = generate(seed);
+            var value = _p61._0;
+            var newSeed = _p61._1;
+            var _v19 = A2($List._op["::"],value,list),
+            _v20 = n - 1,
+            _v21 = generate,
+            _v22 = newSeed;
+            list = _v19;
+            n = _v20;
+            generate = _v21;
+            seed = _v22;
+            continue listHelp;
+         }
+   });
+   var list = F2(function (n,_p62) {
+      var _p63 = _p62;
+      return Generator(function (seed) {
+         return A4(listHelp,_U.list([]),n,_p63._0,seed);
+      });
+   });
+   var pair = F2(function (genA,genB) {
+      return A3(map2,
+      F2(function (v0,v1) {
+         return {ctor: "_Tuple2",_0: v0,_1: v1};
+      }),
+      genA,
+      genB);
+   });
+   var minInt = -2147483648;
+   var maxInt = 2147483647;
+   var iLogBase = F2(function (b,i) {
+      return _U.cmp(i,b) < 0 ? 1 : 1 + A2(iLogBase,b,i / b | 0);
+   });
+   var $int = F2(function (a,b) {
+      return Generator(function (_p64) {
+         var _p65 = _p64;
+         var _p70 = _p65._0;
+         var base = 2147483561;
+         var f = F3(function (n,acc,state) {
+            f: while (true) {
+               var _p66 = n;
+               if (_p66 === 0) {
+                     return {ctor: "_Tuple2",_0: acc,_1: state};
+                  } else {
+                     var _p67 = _p70.next(state);
+                     var x = _p67._0;
+                     var state$ = _p67._1;
+                     var _v26 = n - 1,_v27 = x + acc * base,_v28 = state$;
+                     n = _v26;
+                     acc = _v27;
+                     state = _v28;
+                     continue f;
+                  }
+            }
+         });
+         var _p68 = _U.cmp(a,b) < 0 ? {ctor: "_Tuple2"
+                                      ,_0: a
+                                      ,_1: b} : {ctor: "_Tuple2",_0: b,_1: a};
+         var lo = _p68._0;
+         var hi = _p68._1;
+         var k = hi - lo + 1;
+         var n = A2(iLogBase,base,k);
+         var _p69 = A3(f,n,1,_p70.state);
+         var v = _p69._0;
+         var state$ = _p69._1;
+         return {ctor: "_Tuple2"
+                ,_0: lo + A2($Basics._op["%"],v,k)
+                ,_1: Seed(_U.update(_p70,{state: state$}))};
+      });
+   });
+   var $float = F2(function (a,b) {
+      return Generator(function (seed) {
+         var _p71 = A2(generate,A2($int,minInt,maxInt),seed);
+         var number = _p71._0;
+         var newSeed = _p71._1;
+         var negativeOneToOne = $Basics.toFloat(number) / $Basics.toFloat(maxInt - minInt);
+         var _p72 = _U.cmp(a,b) < 0 ? {ctor: "_Tuple2"
+                                      ,_0: a
+                                      ,_1: b} : {ctor: "_Tuple2",_0: b,_1: a};
+         var lo = _p72._0;
+         var hi = _p72._1;
+         var scaled = (lo + hi) / 2 + (hi - lo) * negativeOneToOne;
+         return {ctor: "_Tuple2",_0: scaled,_1: newSeed};
+      });
+   });
+   var bool = A2(map,
+   F2(function (x,y) {    return _U.eq(x,y);})(1),
+   A2($int,0,1));
+   return _elm.Random.values = {_op: _op
+                               ,bool: bool
+                               ,$int: $int
+                               ,$float: $float
+                               ,list: list
+                               ,pair: pair
+                               ,map: map
+                               ,map2: map2
+                               ,map3: map3
+                               ,map4: map4
+                               ,map5: map5
+                               ,andThen: andThen
+                               ,minInt: minInt
+                               ,maxInt: maxInt
+                               ,generate: generate
+                               ,initialSeed: initialSeed};
+};
 Elm.Window = Elm.Window || {};
 Elm.Window.make = function (_elm) {
    "use strict";
@@ -7811,6 +8088,7 @@ Elm.Main.make = function (_elm) {
    $Keyboard = Elm.Keyboard.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
+   $Random = Elm.Random.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Set = Elm.Set.make(_elm),
    $Signal = Elm.Signal.make(_elm),
@@ -7818,20 +8096,87 @@ Elm.Main.make = function (_elm) {
    $Window = Elm.Window.make(_elm);
    var _op = {};
    var delta = A2($Signal.map,$Time.inSeconds,$Time.fps(35));
+   var toGroups = F2(function (point,acc) {
+      var _p0 = acc;
+      if (_p0.ctor === "[]") {
+            return A2($List._op["::"],_U.list([point]),acc);
+         } else {
+            var _p6 = _p0._1;
+            var _p5 = _p0._0;
+            var _p1 = _p5;
+            if (_p1.ctor === "[]") {
+                  return A2($List._op["::"],_U.list([point]),acc);
+               } else {
+                  var _p2 = _p1._0;
+                  if (_p2.ctor === "Visible") {
+                        var _p3 = point;
+                        if (_p3.ctor === "Visible") {
+                              return A2($List._op["::"],A2($List._op["::"],point,_p5),_p6);
+                           } else {
+                              return A2($List._op["::"],_U.list([point]),acc);
+                           }
+                     } else {
+                        var _p4 = point;
+                        if (_p4.ctor === "Visible") {
+                              return A2($List._op["::"],_U.list([point]),acc);
+                           } else {
+                              return A2($List._op["::"],A2($List._op["::"],point,_p5),_p6);
+                           }
+                     }
+               }
+         }
+   });
+   var isVisible = function (point) {
+      var _p7 = point;
+      if (_p7.ctor === "Visible") {
+            return true;
+         } else {
+            return false;
+         }
+   };
+   var isGroupOfVisibles = function (points) {
+      var _p8 = points;
+      if (_p8.ctor === "[]") {
+            return false;
+         } else {
+            return isVisible(_p8._0);
+         }
+   };
+   var asXY = function (point) {
+      var _p9 = point;
+      if (_p9.ctor === "Visible") {
+            return {ctor: "_Tuple2",_0: _p9._0._0,_1: _p9._0._1};
+         } else {
+            return {ctor: "_Tuple2",_0: _p9._0._0,_1: _p9._0._1};
+         }
+   };
    var renderPlayer = function (player) {
-      return A2($Graphics$Collage.traced,
-      $Graphics$Collage.solid(player.color),
-      $Graphics$Collage.path(player.path));
+      var lineStyle = $Graphics$Collage.solid(player.color);
+      var coords = A3($List.foldr,toGroups,_U.list([]),player.path);
+      var visibleCoords = A2($List.filter,isGroupOfVisibles,coords);
+      var points = A2($List.map,
+      function (pts) {
+         return A2($List.map,asXY,pts);
+      },
+      visibleCoords);
+      return A2($List.map,
+      function (pts) {
+         return A2($Graphics$Collage.traced,
+         lineStyle,
+         $Graphics$Collage.path(pts));
+      },
+      points);
    };
    var view = function (game) {
-      var _p0 = game.viewport;
-      var w$ = _p0._0;
-      var h$ = _p0._1;
-      var _p1 = {ctor: "_Tuple2"
-                ,_0: $Basics.toFloat(w$)
-                ,_1: $Basics.toFloat(h$)};
-      var w = _p1._0;
-      var h = _p1._1;
+      var lines = A2($List.map,renderPlayer,game.players);
+      var _p10 = game.viewport;
+      var w$ = _p10._0;
+      var h$ = _p10._1;
+      var _p11 = {ctor: "_Tuple2"
+                 ,_0: $Basics.toFloat(w$)
+                 ,_1: $Basics.toFloat(h$)};
+      var w = _p11._0;
+      var h = _p11._1;
       return A3($Graphics$Collage.collage,
       w$,
       h$,
@@ -7839,94 +8184,162 @@ Elm.Main.make = function (_elm) {
       _U.list([A2($Graphics$Collage.filled,
       A3($Color.rgb,0,0,0),
       A2($Graphics$Collage.rect,w,h))]),
-      A2($List.map,renderPlayer,game.players)));
+      $List.concat(lines)));
    };
-   var hitWall = F2(function (_p3,_p2) {
-      var _p4 = _p3;
-      var _p8 = _p4._1;
-      var _p7 = _p4._0;
-      var _p5 = _p2;
-      var _p6 = {ctor: "_Tuple2"
-                ,_0: $Basics.toFloat(_p5._0)
-                ,_1: $Basics.toFloat(_p5._1)};
-      var w = _p6._0;
-      var h = _p6._1;
-      return _U.cmp(_p7,w / 2) > -1 ? true : _U.cmp(_p7,
-      0 - w / 2) < 1 ? true : _U.cmp(_p8,
-      h / 2) > -1 ? true : _U.cmp(_p8,0 - h / 2) < 1 ? true : false;
+   var hitWall = F2(function (point,_p12) {
+      var _p13 = _p12;
+      var _p14 = {ctor: "_Tuple2"
+                 ,_0: $Basics.toFloat(_p13._0)
+                 ,_1: $Basics.toFloat(_p13._1)};
+      var w = _p14._0;
+      var h = _p14._1;
+      var _p15 = point;
+      if (_p15.ctor === "Visible") {
+            var _p17 = _p15._0._1;
+            var _p16 = _p15._0._0;
+            return _U.cmp(_p16,w / 2) > -1 ? true : _U.cmp(_p16,
+            0 - w / 2) < 1 ? true : _U.cmp(_p17,
+            h / 2) > -1 ? true : _U.cmp(_p17,0 - h / 2) < 1 ? true : false;
+         } else {
+            return false;
+         }
    });
    var near = F3(function (n,c,m) {
       return _U.cmp(m,n - c) > -1 && _U.cmp(m,n + c) < 1;
    });
-   var hitSnake = F2(function (_p10,_p9) {
-      var _p11 = _p10;
-      var _p12 = _p9;
-      return A3(near,_p11._0,1.9,_p12._0) && A3(near,
-      _p11._1,
-      1.9,
-      _p12._1);
+   var hitSnake = F2(function (point1,point2) {
+      var _p18 = asXY(point2);
+      var x2 = _p18._0;
+      var y2 = _p18._1;
+      var _p19 = asXY(point1);
+      var x1 = _p19._0;
+      var y1 = _p19._1;
+      return A3(near,x1,1.9,x2) && A3(near,y1,1.9,y2);
    });
+   var randomPoint = F2(function (seedInt,_p20) {
+      var _p21 = _p20;
+      var _p25 = _p21._0;
+      var _p24 = _p21._1;
+      var seed = $Random.initialSeed(seedInt);
+      var _p22 = A2($Random.generate,
+      A2($Random.$int,_p25 / 2 | 0,0 - (_p25 / 2 | 0)),
+      seed);
+      var x = _p22._0;
+      var _p23 = A2($Random.generate,
+      A2($Random.$int,_p24 / 2 | 0,0 - (_p24 / 2 | 0)),
+      seed);
+      var y = _p23._0;
+      return {ctor: "_Tuple2"
+             ,_0: $Basics.toFloat(x)
+             ,_1: $Basics.toFloat(y)};
+   });
+   var randomAngle = function (seedInt) {
+      var seed = $Random.initialSeed(seedInt);
+      var _p26 = A2($Random.generate,A2($Random.$int,0,360),seed);
+      var n = _p26._0;
+      return $Basics.toFloat(n);
+   };
+   var randomHole = function (seedInt) {
+      var seed = $Random.initialSeed(seedInt);
+      var _p27 = A2($Random.generate,A2($Random.$int,0,150),seed);
+      var n = _p27._0;
+      if (_U.eq(n,1)) {
+            var _p28 = A2($Random.generate,A2($Random.$int,5,25),seed);
+            var length = _p28._0;
+            return length;
+         } else return 0;
+   };
    var speed = 100;
    var maxAngleChange = 5;
+   var Hidden = function (a) {    return {ctor: "Hidden",_0: a};};
+   var Visible = function (a) {
+      return {ctor: "Visible",_0: a};
+   };
+   var initPlayer = F3(function (player,viewport,time) {
+      var seed = $Basics.truncate($Time.inMilliseconds(time)) + player.id;
+      return _U.update(player,
+      {angle: randomAngle(seed)
+      ,path: _U.list([Visible(A2(randomPoint,seed,viewport))])});
+   });
    var move = F2(function (delta,player) {
+      var visibility = _U.cmp(player.hole,
+      0) > 0 ? Hidden : Visible;
       var nextAngle = function () {
-         var _p13 = player.direction;
-         switch (_p13.ctor)
+         var _p29 = player.direction;
+         switch (_p29.ctor)
          {case "Left": return player.angle + maxAngleChange;
             case "Right": return player.angle + (0 - maxAngleChange);
             default: return player.angle;}
       }();
       var vx = $Basics.cos(nextAngle * $Basics.pi / 180);
       var vy = $Basics.sin(nextAngle * $Basics.pi / 180);
-      var _p14 = A2($Maybe.withDefault,
-      {ctor: "_Tuple2",_0: 0,_1: 0},
+      var point = A2($Maybe.withDefault,
+      Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
       $List.head(player.path));
-      var x = _p14._0;
-      var y = _p14._1;
+      var _p30 = function () {
+         var _p31 = point;
+         if (_p31.ctor === "Visible") {
+               return _p31._0;
+            } else {
+               return _p31._0;
+            }
+      }();
+      var x = _p30._0;
+      var y = _p30._1;
       var nextX = x + vx * (delta * speed);
+      var nextHole = _U.cmp(player.hole,
+      0) < 0 ? randomHole($Basics.truncate(nextX)) : player.hole - 1;
       var nextY = y + vy * (delta * speed);
       return _U.update(player,
       {angle: nextAngle
       ,path: A2($List._op["::"],
-      {ctor: "_Tuple2",_0: nextX,_1: nextY},
-      player.path)});
+      visibility({ctor: "_Tuple2",_0: nextX,_1: nextY}),
+      player.path)
+      ,hole: nextHole});
    });
-   var updatePlayer = F4(function (delta,
+   var updatePlayer = F5(function (delta,
    viewport,
+   time,
    allPlayers,
    player) {
-      if ($Basics.not(player.alive)) return player; else {
-            var paths = A3($List.foldl,
-            F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
-            _U.list([]),
-            allPlayers);
-            var movedPlayer = A2(move,delta,player);
-            var newPos = A2($Maybe.withDefault,
-            {ctor: "_Tuple2",_0: 0,_1: 0},
-            $List.head(movedPlayer.path));
-            var hs = A2($List.any,hitSnake(newPos),paths);
-            var hw = A2(hitWall,newPos,viewport);
-            return hs || hw ? _U.update(player,
-            {alive: false}) : movedPlayer;
-         }
+      if ($Basics.not(player.alive)) return player;
+      else if (_U.cmp($List.length(player.path),1) < 0)
+         return A3(initPlayer,player,viewport,time); else {
+               var paths = A3($List.foldl,
+               F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
+               _U.list([]),
+               allPlayers);
+               var visibles = A2($List.filter,
+               function (p) {
+                  return isVisible(p);
+               },
+               paths);
+               var movedPlayer = A2(move,delta,player);
+               var newPos = A2($Maybe.withDefault,
+               Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
+               $List.head(movedPlayer.path));
+               var hs = A2($List.any,hitSnake(newPos),visibles);
+               var hw = A2(hitWall,newPos,viewport);
+               return hs || hw ? _U.update(player,
+               {alive: false}) : movedPlayer;
+            }
    });
    var Straight = {ctor: "Straight"};
    var defaultPlayer = {id: 1
-                       ,path: _U.list([{ctor: "_Tuple2",_0: 0,_1: 0}])
-                       ,angle: 90
+                       ,path: _U.list([])
+                       ,angle: 0
                        ,direction: Straight
                        ,alive: true
                        ,score: 0
                        ,color: A3($Color.rgb,74,167,43)
                        ,leftKey: $Char.toCode(_U.chr("A"))
-                       ,rightKey: $Char.toCode(_U.chr("S"))};
+                       ,rightKey: $Char.toCode(_U.chr("S"))
+                       ,hole: 0};
    var player2 = _U.update(defaultPlayer,
    {id: 2
-   ,path: _U.list([{ctor: "_Tuple2",_0: 30,_1: -30}])
-   ,angle: 95
    ,color: A3($Color.rgb,60,100,60)
-   ,leftKey: $Char.toCode(_U.chr("K"))
-   ,rightKey: $Char.toCode(_U.chr("L"))});
+   ,leftKey: 37
+   ,rightKey: 39});
    var Right = {ctor: "Right"};
    var Left = {ctor: "Left"};
    var toDirection = F2(function (keys,player) {
@@ -7947,30 +8360,50 @@ Elm.Main.make = function (_elm) {
       players,
       directions);
    });
-   var Input = F4(function (a,b,c,d) {
-      return {space: a,keys: b,delta: c,viewport: d};
+   var Input = F5(function (a,b,c,d,e) {
+      return {space: a,keys: b,delta: c,viewport: d,time: e};
    });
    var input = function (game) {
       return A2($Signal.sampleOn,
       delta,
-      A5($Signal.map4,
+      A6($Signal.map5,
       Input,
       $Keyboard.space,
       $Keyboard.keysDown,
       delta,
-      $Window.dimensions));
+      $Window.dimensions,
+      $Time.every($Time.millisecond)));
    };
-   var Player = F9(function (a,b,c,d,e,f,g,h,i) {
-      return {id: a
-             ,path: b
-             ,angle: c
-             ,direction: d
-             ,alive: e
-             ,score: f
-             ,color: g
-             ,leftKey: h
-             ,rightKey: i};
-   });
+   var Player = function (a) {
+      return function (b) {
+         return function (c) {
+            return function (d) {
+               return function (e) {
+                  return function (f) {
+                     return function (g) {
+                        return function (h) {
+                           return function (i) {
+                              return function (j) {
+                                 return {id: a
+                                        ,path: b
+                                        ,angle: c
+                                        ,direction: d
+                                        ,alive: e
+                                        ,score: f
+                                        ,color: g
+                                        ,leftKey: h
+                                        ,rightKey: i
+                                        ,hole: j};
+                              };
+                           };
+                        };
+                     };
+                  };
+               };
+            };
+         };
+      };
+   };
    var Game = F3(function (a,b,c) {
       return {players: a,state: b,viewport: c};
    });
@@ -7979,23 +8412,23 @@ Elm.Main.make = function (_elm) {
                      ,state: Pause
                      ,viewport: {ctor: "_Tuple2",_0: 0,_1: 0}};
    var Play = {ctor: "Play"};
-   var update = F2(function (_p16,_p15) {
-      var _p17 = _p16;
-      var _p21 = _p17.viewport;
-      var _p18 = _p15;
-      var _p20 = _p18.state;
-      var _p19 = _p18.players;
-      var newPlayers = _U.eq(_p20,Pause) ? _p19 : A2($List.map,
-      A3(updatePlayer,_p17.delta,_p21,_p19),
-      A2(mapInputs,_p19,_p17.keys));
-      var newState = _p17.space ? Play : _U.cmp($List.length(A2($List.filter,
+   var update = F2(function (_p33,_p32) {
+      var _p34 = _p33;
+      var _p38 = _p34.viewport;
+      var _p35 = _p32;
+      var _p37 = _p35.state;
+      var _p36 = _p35.players;
+      var newPlayers = _U.eq(_p37,Pause) ? _p36 : A2($List.map,
+      A4(updatePlayer,_p34.delta,_p38,_p34.time,_p36),
+      A2(mapInputs,_p36,_p34.keys));
+      var newState = _p34.space ? Play : _U.cmp($List.length(A2($List.filter,
       function (p) {
          return p.alive;
       },
-      _p19)),
-      2) < 0 ? Pause : _p20;
-      return _U.update(_p18,
-      {players: newPlayers,viewport: _p21,state: newState});
+      _p36)),
+      2) < 0 ? Pause : _p37;
+      return _U.update(_p35,
+      {players: newPlayers,viewport: _p38,state: newState});
    });
    var gameState = A3($Signal.foldp,
    update,
@@ -8011,19 +8444,29 @@ Elm.Main.make = function (_elm) {
                              ,Left: Left
                              ,Right: Right
                              ,Straight: Straight
+                             ,Visible: Visible
+                             ,Hidden: Hidden
                              ,maxAngleChange: maxAngleChange
                              ,speed: speed
                              ,defaultPlayer: defaultPlayer
                              ,player2: player2
                              ,defaultGame: defaultGame
                              ,update: update
+                             ,initPlayer: initPlayer
                              ,updatePlayer: updatePlayer
                              ,move: move
+                             ,randomHole: randomHole
+                             ,randomAngle: randomAngle
+                             ,randomPoint: randomPoint
                              ,near: near
                              ,hitSnake: hitSnake
                              ,hitWall: hitWall
                              ,view: view
                              ,renderPlayer: renderPlayer
+                             ,asXY: asXY
+                             ,isGroupOfVisibles: isGroupOfVisibles
+                             ,isVisible: isVisible
+                             ,toGroups: toGroups
                              ,mapInputs: mapInputs
                              ,toDirection: toDirection
                              ,main: main
