@@ -98,7 +98,7 @@ defaultGame =
 update : Input -> Game -> Game
 update {space, keys, delta, viewport, time} ({players, state} as game) =
     let
-        newState =
+        state' =
             if space then
                 Play
 
@@ -108,7 +108,7 @@ update {space, keys, delta, viewport, time} ({players, state} as game) =
             else
                 state
 
-        newPlayers =
+        players' =
             if state == Pause then
                 players
 
@@ -117,9 +117,9 @@ update {space, keys, delta, viewport, time} ({players, state} as game) =
                     (mapInputs players keys)
 
     in
-        { game | players = newPlayers
+        { game | players = players'
                , viewport = viewport
-               , state = newState
+               , state = state'
         }
 
 
@@ -144,29 +144,31 @@ updatePlayer delta viewport time allPlayers player =
 
     else
         let
-            movedPlayer = move delta player
-            newPos = Maybe.withDefault (Visible (0, 0)) (head movedPlayer.path)
+            player' = move delta player
+            playerPosition = Maybe.withDefault (Visible (0, 0)) (head player'.path)
             paths = foldl (\p acc -> append p.path acc) [] allPlayers
-            visibles = filter (\p -> isVisible p) paths
-            hs = any (hitSnake newPos) visibles
-            hw = hitWall newPos viewport
+            paths' = filter (\p -> isVisible p) paths
+            hs = any (hitSnake playerPosition) paths'
+            hw = hitWall playerPosition viewport
 
         in
             if hs || hw then
                 { player | alive = False }
 
             else
-                movedPlayer
+                player'
 
 
 move : Time -> Player -> Player
 move delta player =
     let
-        point = Maybe.withDefault (Visible (0, 0)) (head player.path)
+        point =
+            Maybe.withDefault (Visible (0, 0)) (head player.path)
+
         (x, y) =
             asXY point
 
-        nextAngle =
+        angle =
             case player.direction of
                 Left ->
                     player.angle + maxAngleChange
@@ -177,24 +179,36 @@ move delta player =
                 Straight ->
                     player.angle
 
-        vx = cos (nextAngle * pi / 180)
-        vy = sin (nextAngle * pi / 180)
-        nextX = x + vx * (delta * speed)
-        nextY = y + vy * (delta * speed)
+        vx =
+            cos (angle * pi / 180)
+
+        vy =
+            sin (angle * pi / 180)
+
+        nextX =
+            x + vx * (delta * speed)
+
+        nextY =
+            y + vy * (delta * speed)
 
         visibility =
-            if player.hole > 0 then Hidden else Visible
+            if player.hole > 0 then
+                Hidden
 
-        nextHole =
+            else
+                Visible
+
+        hole =
             if player.hole < 0 then
                 randomHole (truncate nextX)
+
             else
                 player.hole - 1
 
     in
-        { player | angle = nextAngle
+        { player | angle = angle
                  , path = visibility (nextX, nextY) :: player.path
-                 , hole = nextHole
+                 , hole = hole
         }
 
 
@@ -270,16 +284,18 @@ hitSnake point1 point2 =
 
 
 hitWall : Point (Float, Float) -> (Int, Int) -> Bool
-hitWall point (w', h') =
-    let (w, h) = (toFloat w', toFloat h')
+hitWall point (w, h) =
+    let
+        (w', h') =
+            (toFloat w, toFloat h)
 
     in
         case point of
             Visible (x, y) ->
-                if      x >= (w / 2)  then True
-                else if x <= -(w / 2) then True
-                else if y >= (h / 2)  then True
-                else if y <= -(h / 2) then True
+                if      x >= (w' / 2)  then True
+                else if x <= -(w' / 2) then True
+                else if y >= (h' / 2)  then True
+                else if y <= -(h' / 2) then True
                 else                       False
 
             Hidden _ ->
@@ -292,19 +308,19 @@ hitWall point (w', h') =
 view : Game -> Element
 view game =
     let
-        (w', h') =
+        (w, h) =
             game.viewport
 
-        (w, h) =
-            (toFloat w', toFloat h')
+        (w', h') =
+            (toFloat w, toFloat h)
 
         lines =
             (map renderPlayer game.players)
 
     in
-        collage w' h'
+        collage w h
             (append
-                [ rect w h
+                [ rect w' h'
                     |> filled (rgb 000 000 000)
                 ] (concat lines)
             )
@@ -335,8 +351,11 @@ renderPlayer player =
 asXY : Point (Float, Float) -> (Float, Float)
 asXY point =
     case point of
-        Visible (x, y) -> (x, y)
-        Hidden (x, y) -> (x, y)
+        Visible (x, y) ->
+            (x, y)
+
+        Hidden (x, y) ->
+            (x, y)
 
 
 isGroupOfVisibles : List (Point (Float, Float)) -> Bool
@@ -390,7 +409,7 @@ mapInputs players keys =
         map (toDirection keys) players
 
     in
-        map2 (\p d -> {p | direction = d}) players directions
+        map2 (\p d -> { p | direction = d }) players directions
 
 
 toDirection : Set.Set Char.KeyCode -> Player -> Direction
