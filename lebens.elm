@@ -14,13 +14,17 @@ import Random
 -- MODEL
 
 
-type State = Play | Pause
+type State = Start
+           | Play
+           | Roundover
+           | Gameover
 
 
 type alias Game =
     { players: List Player
     , state: State
     , viewport: (Int, Int)
+    , rounds: Int
     }
 
 
@@ -87,8 +91,9 @@ player2 =
 defaultGame : Game
 defaultGame =
     { players = [defaultPlayer, player2]
-    , state = Pause
+    , state = Start
     , viewport = (0, 0)
+    , rounds = 5
     }
 
 
@@ -96,41 +101,76 @@ defaultGame =
 
 
 update : Input -> Game -> Game
-update {space, keys, delta, viewport, time} ({players, state} as game) =
+update {space, keys, delta, viewport, time} ({players, state, rounds} as game) =
     let
-        state' =
-            if space then
-                Play
 
-            else if (length (filter (\p -> p.alive) players) < 2) then
-                Pause
+        nextState =
+            if space then
+                case state of
+                    Start -> Play
+                    Play -> Play
+                    Roundover -> Play
+                    Gameover -> Start
 
             else
-                state
+                if length (filter (\p -> p.alive) players) == 0 then
+                    if rounds == 0 then
+                        Gameover
+
+                    else
+                        Roundover
+
+                else
+                    state
+
+        rounds' =
+            if state == Play && nextState == Roundover then
+                rounds - 1
+
+            else
+                rounds
 
         players' =
-            if state == Pause then
-                players
+            case nextState of
+                Start ->
+                    players
 
-            else
-                map (updatePlayer delta viewport time players)
-                    (mapInputs players keys)
+                Play ->
+                    if state == Start || state == Roundover then
+                        map (initPlayer viewport time) players
+
+                    else
+                        map (updatePlayer delta viewport time players)
+                        (mapInputs players keys)
+
+                Roundover ->
+                    players
+
+                Gameover ->
+                    players
+
+        watch1 = Debug.watch "state" state
+        watch2 = Debug.watch "nextState" nextState
+        watch3 = Debug.watch "round" rounds'
+        watch4 = Debug.watch "survivors" (length (filter (\p -> p.alive) players))
 
     in
         { game | players = players'
                , viewport = viewport
-               , state = state'
+               , state = nextState
+               , rounds = rounds'
         }
 
 
-initPlayer : Player -> (Int, Int) -> Time -> Player
-initPlayer player viewport time =
+initPlayer : (Int, Int) -> Time -> Player-> Player
+initPlayer viewport time player =
     let
         seed = (truncate (inMilliseconds time)) + player.id
 
     in
         { player | angle = randomAngle seed
                  , path = [Visible (randomPoint seed viewport)]
+                 , alive = True
         }
 
 
@@ -139,21 +179,41 @@ updatePlayer delta viewport time allPlayers player =
     if not player.alive then
         player
 
-    else if length player.path < 1 then
-        initPlayer player viewport time
-
     else
         let
-            player' = move delta player
-            playerPosition = Maybe.withDefault (Visible (0, 0)) (head player'.path)
-            paths = foldl (\p acc -> append p.path acc) [] allPlayers
-            paths' = filter (\p -> isVisible p) paths
-            hs = any (hitSnake playerPosition) paths'
-            hw = hitWall playerPosition viewport
+            player' =
+                move delta player
+
+            playerPosition =
+                Maybe.withDefault (Visible (0, 0)) (head player'.path)
+
+            paths =
+                foldl (\p acc -> append p.path acc) [] allPlayers
+
+            paths' =
+                filter (\p -> isVisible p) paths
+
+            hs =
+                any (hitSnake playerPosition) paths'
+
+            hw =
+                hitWall playerPosition viewport
+
+            winner =
+                if length (filter (\p -> p.alive) allPlayers) < 2 then
+                    True
+
+                else
+                    False
 
         in
             if hs || hw then
                 { player | alive = False }
+
+            else if winner then
+                { player' | score = player'.score + 1
+                          , alive = False
+                }
 
             else
                 player'

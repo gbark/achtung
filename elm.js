@@ -8156,20 +8156,20 @@ Elm.Main.make = function (_elm) {
    var view = function (game) {
       var lines = A2($List.map,renderPlayer,game.players);
       var _p6 = game.viewport;
-      var w$ = _p6._0;
-      var h$ = _p6._1;
+      var w = _p6._0;
+      var h = _p6._1;
       var _p7 = {ctor: "_Tuple2"
-                ,_0: $Basics.toFloat(w$)
-                ,_1: $Basics.toFloat(h$)};
-      var w = _p7._0;
-      var h = _p7._1;
+                ,_0: $Basics.toFloat(w)
+                ,_1: $Basics.toFloat(h)};
+      var w$ = _p7._0;
+      var h$ = _p7._1;
       return A3($Graphics$Collage.collage,
-      w$,
-      h$,
+      w,
+      h,
       A2($List.append,
       _U.list([A2($Graphics$Collage.filled,
       A3($Color.rgb,0,0,0),
-      A2($Graphics$Collage.rect,w,h))]),
+      A2($Graphics$Collage.rect,w$,h$))]),
       $List.concat(lines)));
    };
    var hitWall = F2(function (point,_p8) {
@@ -8177,15 +8177,16 @@ Elm.Main.make = function (_elm) {
       var _p10 = {ctor: "_Tuple2"
                  ,_0: $Basics.toFloat(_p9._0)
                  ,_1: $Basics.toFloat(_p9._1)};
-      var w = _p10._0;
-      var h = _p10._1;
+      var w$ = _p10._0;
+      var h$ = _p10._1;
       var _p11 = point;
       if (_p11.ctor === "Visible") {
             var _p13 = _p11._0._1;
             var _p12 = _p11._0._0;
-            return _U.cmp(_p12,w / 2) > -1 ? true : _U.cmp(_p12,
-            0 - w / 2) < 1 ? true : _U.cmp(_p13,
-            h / 2) > -1 ? true : _U.cmp(_p13,0 - h / 2) < 1 ? true : false;
+            return _U.cmp(_p12,w$ / 2) > -1 ? true : _U.cmp(_p12,
+            0 - w$ / 2) < 1 ? true : _U.cmp(_p13,
+            h$ / 2) > -1 ? true : _U.cmp(_p13,
+            0 - h$ / 2) < 1 ? true : false;
          } else {
             return false;
          }
@@ -8241,24 +8242,25 @@ Elm.Main.make = function (_elm) {
    var Visible = function (a) {
       return {ctor: "Visible",_0: a};
    };
-   var initPlayer = F3(function (player,viewport,time) {
+   var initPlayer = F3(function (viewport,time,player) {
       var seed = $Basics.truncate($Time.inMilliseconds(time)) + player.id;
       return _U.update(player,
       {angle: randomAngle(seed)
-      ,path: _U.list([Visible(A2(randomPoint,seed,viewport))])});
+      ,path: _U.list([Visible(A2(randomPoint,seed,viewport))])
+      ,alive: true});
    });
    var move = F2(function (delta,player) {
       var visibility = _U.cmp(player.hole,
       0) > 0 ? Hidden : Visible;
-      var nextAngle = function () {
+      var angle = function () {
          var _p25 = player.direction;
          switch (_p25.ctor)
          {case "Left": return player.angle + maxAngleChange;
             case "Right": return player.angle + (0 - maxAngleChange);
             default: return player.angle;}
       }();
-      var vx = $Basics.cos(nextAngle * $Basics.pi / 180);
-      var vy = $Basics.sin(nextAngle * $Basics.pi / 180);
+      var vx = $Basics.cos(angle * $Basics.pi / 180);
+      var vy = $Basics.sin(angle * $Basics.pi / 180);
       var point = A2($Maybe.withDefault,
       Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
       $List.head(player.path));
@@ -8266,42 +8268,52 @@ Elm.Main.make = function (_elm) {
       var x = _p26._0;
       var y = _p26._1;
       var nextX = x + vx * (delta * speed);
-      var nextHole = _U.cmp(player.hole,
+      var hole = _U.cmp(player.hole,
       0) < 0 ? randomHole($Basics.truncate(nextX)) : player.hole - 1;
       var nextY = y + vy * (delta * speed);
       return _U.update(player,
-      {angle: nextAngle
+      {angle: angle
       ,path: A2($List._op["::"],
       visibility({ctor: "_Tuple2",_0: nextX,_1: nextY}),
       player.path)
-      ,hole: nextHole});
+      ,hole: hole});
    });
    var updatePlayer = F5(function (delta,
    viewport,
    time,
    allPlayers,
    player) {
-      if ($Basics.not(player.alive)) return player;
-      else if (_U.cmp($List.length(player.path),1) < 0)
-         return A3(initPlayer,player,viewport,time); else {
-               var paths = A3($List.foldl,
-               F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
-               _U.list([]),
-               allPlayers);
-               var visibles = A2($List.filter,
-               function (p) {
-                  return isVisible(p);
-               },
-               paths);
-               var movedPlayer = A2(move,delta,player);
-               var newPos = A2($Maybe.withDefault,
-               Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
-               $List.head(movedPlayer.path));
-               var hs = A2($List.any,hitSnake(newPos),visibles);
-               var hw = A2(hitWall,newPos,viewport);
-               return hs || hw ? _U.update(player,
-               {alive: false}) : movedPlayer;
-            }
+      var watch = A2($Debug.watch,
+      A2($Basics._op["++"],
+      "score player ",
+      $Basics.toString(player.id)),
+      player.score);
+      if ($Basics.not(player.alive)) return player; else {
+            var winner = _U.cmp($List.length(A2($List.filter,
+            function (p) {
+               return p.alive;
+            },
+            allPlayers)),
+            2) < 0 ? true : false;
+            var paths = A3($List.foldl,
+            F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
+            _U.list([]),
+            allPlayers);
+            var paths$ = A2($List.filter,
+            function (p) {
+               return isVisible(p);
+            },
+            paths);
+            var player$ = A2(move,delta,player);
+            var playerPosition = A2($Maybe.withDefault,
+            Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
+            $List.head(player$.path));
+            var hs = A2($List.any,hitSnake(playerPosition),paths$);
+            var hw = A2(hitWall,playerPosition,viewport);
+            return hs || hw ? _U.update(player,
+            {alive: false}) : winner ? _U.update(player$,
+            {score: player$.score + 1,alive: false}) : player$;
+         }
    });
    var Straight = {ctor: "Straight"};
    var defaultPlayer = {id: 1
@@ -8383,31 +8395,71 @@ Elm.Main.make = function (_elm) {
          };
       };
    };
-   var Game = F3(function (a,b,c) {
-      return {players: a,state: b,viewport: c};
+   var Game = F4(function (a,b,c,d) {
+      return {players: a,state: b,viewport: c,rounds: d};
    });
-   var Pause = {ctor: "Pause"};
-   var defaultGame = {players: _U.list([defaultPlayer,player2])
-                     ,state: Pause
-                     ,viewport: {ctor: "_Tuple2",_0: 0,_1: 0}};
+   var Gameover = {ctor: "Gameover"};
+   var Roundover = {ctor: "Roundover"};
    var Play = {ctor: "Play"};
+   var Start = {ctor: "Start"};
+   var defaultGame = {players: _U.list([defaultPlayer,player2])
+                     ,state: Start
+                     ,viewport: {ctor: "_Tuple2",_0: 0,_1: 0}
+                     ,rounds: 5};
    var update = F2(function (_p28,_p27) {
       var _p29 = _p28;
-      var _p33 = _p29.viewport;
+      var _p37 = _p29.viewport;
+      var _p36 = _p29.time;
       var _p30 = _p27;
-      var _p32 = _p30.state;
-      var _p31 = _p30.players;
-      var newPlayers = _U.eq(_p32,Pause) ? _p31 : A2($List.map,
-      A4(updatePlayer,_p29.delta,_p33,_p29.time,_p31),
-      A2(mapInputs,_p31,_p29.keys));
-      var newState = _p29.space ? Play : _U.cmp($List.length(A2($List.filter,
+      var _p35 = _p30.state;
+      var _p34 = _p30.rounds;
+      var _p33 = _p30.players;
+      var watchSurvivors = A2($Debug.watch,
+      "survivors",
+      $List.length(A2($List.filter,
       function (p) {
          return p.alive;
       },
-      _p31)),
-      2) < 0 ? Pause : _p32;
+      _p33)));
+      var watch1 = A2($Debug.watch,"state",_p35);
+      var nextState = function () {
+         if (_p29.space) {
+               var _p31 = _p35;
+               switch (_p31.ctor)
+               {case "Start": return Play;
+                  case "Play": return Play;
+                  case "Roundover": return Play;
+                  default: return Start;}
+            } else if (_U.eq($List.length(A2($List.filter,
+            function (p) {
+               return p.alive;
+            },
+            _p33)),
+            0)) return _U.eq(_p34,0) ? Gameover : Roundover;
+            else return _p35;
+      }();
+      var rounds$ = _U.eq(_p35,Play) && _U.eq(nextState,
+      Roundover) ? _p34 - 1 : _p34;
+      var watch3 = A2($Debug.watch,"round",rounds$);
+      var players$ = function () {
+         var _p32 = nextState;
+         switch (_p32.ctor)
+         {case "Start": return _p33;
+            case "Play": return _U.eq(_p35,Start) || _U.eq(_p35,
+              Roundover) ? A2($List.map,
+              A2(initPlayer,_p37,_p36),
+              _p33) : A2($List.map,
+              A4(updatePlayer,_p29.delta,_p37,_p36,_p33),
+              A2(mapInputs,_p33,_p29.keys));
+            case "Roundover": return _p33;
+            default: return _p33;}
+      }();
+      var watch2 = A2($Debug.watch,"nextState",nextState);
       return _U.update(_p30,
-      {players: newPlayers,viewport: _p33,state: newState});
+      {players: players$
+      ,viewport: _p37
+      ,state: nextState
+      ,rounds: rounds$});
    });
    var gameState = A3($Signal.foldp,
    update,
@@ -8415,8 +8467,10 @@ Elm.Main.make = function (_elm) {
    input(defaultGame));
    var main = A2($Signal.map,view,gameState);
    return _elm.Main.values = {_op: _op
+                             ,Start: Start
                              ,Play: Play
-                             ,Pause: Pause
+                             ,Roundover: Roundover
+                             ,Gameover: Gameover
                              ,Game: Game
                              ,Player: Player
                              ,Input: Input
