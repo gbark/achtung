@@ -12207,15 +12207,16 @@ Elm.Main.make = function (_elm) {
    });
    var randomPosition = F2(function (seedInt,_p18) {
       var _p19 = _p18;
-      var _p23 = _p19._0;
-      var _p22 = _p19._1;
+      var safetyMargin = 500;
+      var w$ = _p19._0 - safetyMargin;
+      var h$ = _p19._1 - safetyMargin;
       var seed = $Random.initialSeed(seedInt);
       var _p20 = A2($Random.generate,
-      A2($Random.$int,_p23 / 2 | 0,0 - (_p23 / 2 | 0)),
+      A2($Random.$int,w$ / 2 | 0,0 - (w$ / 2 | 0)),
       seed);
       var x = _p20._0;
       var _p21 = A2($Random.generate,
-      A2($Random.$int,_p22 / 2 | 0,0 - (_p22 / 2 | 0)),
+      A2($Random.$int,h$ / 2 | 0,0 - (h$ / 2 | 0)),
       seed);
       var y = _p21._0;
       return {ctor: "_Tuple2"
@@ -12224,14 +12225,14 @@ Elm.Main.make = function (_elm) {
    });
    var randomAngle = function (seedInt) {
       var seed = $Random.initialSeed(seedInt);
-      var _p24 = A2($Random.generate,A2($Random.$int,0,360),seed);
-      var n = _p24._0;
+      var _p22 = A2($Random.generate,A2($Random.$int,0,360),seed);
+      var n = _p22._0;
       return $Basics.toFloat(n);
    };
    var randomHole = function (seedInt) {
       var seed = $Random.initialSeed(seedInt);
-      var _p25 = A2($Random.generate,A2($Random.$int,0,150),seed);
-      var n = _p25._0;
+      var _p23 = A2($Random.generate,A2($Random.$int,0,150),seed);
+      var n = _p23._0;
       return _U.eq(n,1) ? $Basics.fst(A2($Random.generate,
       A2($Random.$int,5,10),
       seed)) : 0;
@@ -12287,14 +12288,14 @@ Elm.Main.make = function (_elm) {
    };
    var view = function (game) {
       var lines = A2($List.map,renderPlayer,game.players);
-      var _p26 = game.gamearea;
-      var w = _p26._0;
-      var h = _p26._1;
-      var _p27 = {ctor: "_Tuple2"
+      var _p24 = game.gamearea;
+      var w = _p24._0;
+      var h = _p24._1;
+      var _p25 = {ctor: "_Tuple2"
                  ,_0: $Basics.toFloat(w)
                  ,_1: $Basics.toFloat(h)};
-      var w$ = _p27._0;
-      var h$ = _p27._1;
+      var w$ = _p25._0;
+      var h$ = _p25._1;
       return A2($Html.main$,
       _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
                                                ,_0: "position"
@@ -12326,8 +12327,8 @@ Elm.Main.make = function (_elm) {
       var visibility = _U.cmp(player.hole,
       0) > 0 ? Hidden : Visible;
       var angle = function () {
-         var _p28 = player.direction;
-         switch (_p28.ctor)
+         var _p26 = player.direction;
+         switch (_p26.ctor)
          {case "Left": return player.angle + maxAngleChange;
             case "Right": return player.angle + (0 - maxAngleChange);
             default: return player.angle;}
@@ -12337,9 +12338,9 @@ Elm.Main.make = function (_elm) {
       var position = A2($Maybe.withDefault,
       Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
       $List.head(player.path));
-      var _p29 = asXY(position);
-      var x = _p29._0;
-      var y = _p29._1;
+      var _p27 = asXY(position);
+      var x = _p27._0;
+      var y = _p27._1;
       var nextX = x + vx * (delta * speed);
       var hole = _U.cmp(player.hole,
       0) < 0 ? randomHole($Basics.truncate(nextX)) : player.hole - 1;
@@ -12436,11 +12437,11 @@ Elm.Main.make = function (_elm) {
       $Keyboard.keysDown,
       delta,
       A2($Signal.map,
-      function (_p30) {
-         var _p31 = _p30;
+      function (_p28) {
+         var _p29 = _p28;
          return {ctor: "_Tuple2"
-                ,_0: _p31._0 - sidebarWidth - sidebarBorderWidth
-                ,_1: _p31._1};
+                ,_0: _p29._0 - sidebarWidth - sidebarBorderWidth
+                ,_1: _p29._1};
       },
       $Window.dimensions),
       $Time.every($Time.millisecond)));
@@ -12486,26 +12487,18 @@ Elm.Main.make = function (_elm) {
                      ,gamearea: {ctor: "_Tuple2",_0: 0,_1: 0}
                      ,round: 0};
    var Select = {ctor: "Select"};
-   var update = F2(function (_p33,_p32) {
-      var _p34 = _p33;
-      var _p42 = _p34.time;
-      var _p41 = _p34.gamearea;
-      var _p35 = _p32;
-      var _p40 = _p35.state;
-      var _p39 = _p35.round;
-      var _p38 = _p35.players;
-      var watch4 = A2($Debug.watch,
-      "survivors",
-      $List.length(A2($List.filter,
-      function (p) {
-         return p.alive;
-      },
-      _p38)));
-      var watch1 = A2($Debug.watch,"state",_p40);
+   var update = F2(function (_p31,_p30) {
+      var _p32 = _p31;
+      var _p40 = _p32.time;
+      var _p39 = _p32.gamearea;
+      var _p33 = _p30;
+      var _p38 = _p33.state;
+      var _p37 = _p33.round;
+      var _p36 = _p33.players;
       var nextState = function () {
-         if (_p34.space) {
-               var _p36 = _p40;
-               switch (_p36.ctor)
+         if (_p32.space) {
+               var _p34 = _p38;
+               switch (_p34.ctor)
                {case "Select": return Select;
                   case "Start": return Play;
                   case "Play": return Play;
@@ -12514,29 +12507,27 @@ Elm.Main.make = function (_elm) {
             function (p) {
                return p.alive;
             },
-            _p38)),
-            0)) return Roundover; else return _p40;
+            _p36)),
+            0)) return Roundover; else return _p38;
       }();
-      var round$ = _U.eq(_p40,Play) && _U.eq(nextState,
-      Roundover) ? _p39 + 1 : _p39;
-      var watch3 = A2($Debug.watch,"round",round$);
+      var round$ = _U.eq(_p38,Play) && _U.eq(nextState,
+      Roundover) ? _p37 + 1 : _p37;
       var players$ = function () {
-         var _p37 = nextState;
-         switch (_p37.ctor)
-         {case "Select": return _p38;
-            case "Start": return _p38;
-            case "Roundover": return _p38;
-            default: return _U.eq(_p40,Start) || _U.eq(_p40,
+         var _p35 = nextState;
+         switch (_p35.ctor)
+         {case "Select": return _p36;
+            case "Start": return _p36;
+            case "Roundover": return _p36;
+            default: return _U.eq(_p38,Start) || _U.eq(_p38,
               Roundover) ? A2($List.map,
-              A2(initPlayer,_p41,_p42),
-              _p38) : A2($List.map,
-              A4(updatePlayer,_p34.delta,_p41,_p42,_p38),
-              A2(mapInputs,_p38,_p34.keys));}
+              A2(initPlayer,_p39,_p40),
+              _p36) : A2($List.map,
+              A4(updatePlayer,_p32.delta,_p39,_p40,_p36),
+              A2(mapInputs,_p36,_p32.keys));}
       }();
-      var watch2 = A2($Debug.watch,"nextState",nextState);
-      return _U.update(_p35,
+      return _U.update(_p33,
       {players: players$
-      ,gamearea: _p41
+      ,gamearea: _p39
       ,state: nextState
       ,round: round$});
    });

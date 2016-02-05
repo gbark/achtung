@@ -300,11 +300,20 @@ randomPosition seedInt (w, h) =
         seed =
             Random.initialSeed seedInt
 
+        safetyMargin =
+            500
+
+        w' =
+            w - safetyMargin
+
+        h' =
+            h - safetyMargin
+
         (x, _) =
-            Random.generate (Random.int (w // 2) -(w // 2)) seed
+            Random.generate (Random.int (w' // 2) -(w' // 2)) seed
 
         (y, _) =
-            Random.generate (Random.int (h // 2) -(h // 2)) seed
+            Random.generate (Random.int (h' // 2) -(h' // 2)) seed
 
     in
         (toFloat x, toFloat y)
