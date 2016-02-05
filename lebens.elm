@@ -3,34 +3,35 @@ import Window
 import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
 import Keyboard
-import Debug
 import Char
 import Time exposing (..)
 import List exposing (..)
 import Set
 import Random
+import Html exposing (..)
+import Html.Attributes exposing (..)
 
 
 -- MODEL
 
 
-type State = Start
+type State = Select
+           | Start
            | Play
            | Roundover
-           | Gameover
 
 
 type alias Game =
     { players: List Player
     , state: State
-    , viewport: (Int, Int)
-    , rounds: Int
+    , gamearea: (Int, Int)
+    , round: Int
     }
 
 
 type alias Player =
     { id: Int
-    , path: List (Point (Float, Float))
+    , path: List (Position (Float, Float))
     , angle: Float
     , direction: Direction
     , alive: Bool
@@ -46,7 +47,7 @@ type alias Input =
     { space: Bool
     , keys: Set.Set Char.KeyCode
     , delta: Time
-    , viewport: (Int, Int)
+    , gamearea: (Int, Int)
     , time: Time
     }
 
@@ -57,43 +58,54 @@ type Direction
     | Straight
 
 
-type Point a = Visible a | Hidden a
+type Position a = Visible a | Hidden a
 
 
 maxAngleChange = 5
-speed = 100
+speed = 125
+sidebarWidth = 250
+sidebarBorderWidth = 5
 
 
-defaultPlayer : Player
-defaultPlayer =
+player1 : Player
+player1 =
     { id = 1
     , path = []
     , angle = 0
     , direction = Straight
     , alive = True
     , score = 0
-    , color = rgb 74 167 43
-    , leftKey = (Char.toCode 'A')
-    , rightKey = (Char.toCode 'S')
+    , color = rgb 254 221 3
+    , leftKey = (Char.toCode 'Z')
+    , rightKey = (Char.toCode 'X')
     , hole = 0
     }
 
 
 player2 : Player
 player2 =
-    { defaultPlayer | id = 2
-                    , color = rgb 60 100 60
-                    , leftKey = 37
-                    , rightKey = 39
+    { player1 | id = 2
+              , color = rgb 229 49 39
+              , leftKey = 40
+              , rightKey = 39
+    }
+
+
+player3 : Player
+player3 =
+    { player1 | id = 3
+              , color = rgb 25 100 183
+              , leftKey = (Char.toCode 'N')
+              , rightKey = (Char.toCode 'M')
     }
 
 
 defaultGame : Game
 defaultGame =
-    { players = [defaultPlayer, player2]
+    { players = [player1, player2, player3]
     , state = Start
-    , viewport = (0, 0)
-    , rounds = 5
+    , gamearea = (0, 0)
+    , round = 0
     }
 
 
@@ -101,81 +113,65 @@ defaultGame =
 
 
 update : Input -> Game -> Game
-update {space, keys, delta, viewport, time} ({players, state, rounds} as game) =
+update {space, keys, delta, gamearea, time} ({players, state, round} as game) =
     let
-
         nextState =
             if space then
                 case state of
+                    Select -> Select
                     Start -> Play
                     Play -> Play
                     Roundover -> Play
-                    Gameover -> Start
 
             else
                 if length (filter (\p -> p.alive) players) == 0 then
-                    if rounds == 0 then
-                        Gameover
-
-                    else
-                        Roundover
+                   Roundover
 
                 else
                     state
 
-        rounds' =
+        round' =
             if state == Play && nextState == Roundover then
-                rounds - 1
+                round + 1
 
             else
-                rounds
+                round
 
         players' =
             case nextState of
-                Start ->
-                    players
-
+                Select -> players
+                Start -> players
+                Roundover -> players
                 Play ->
                     if state == Start || state == Roundover then
-                        map (initPlayer viewport time) players
+                        map (initPlayer gamearea time) players
 
                     else
-                        map (updatePlayer delta viewport time players)
+                        map (updatePlayer delta gamearea time players)
                         (mapInputs players keys)
-
-                Roundover ->
-                    players
-
-                Gameover ->
-                    players
-
-        watch1 = Debug.watch "state" state
-        watch2 = Debug.watch "nextState" nextState
-        watch3 = Debug.watch "round" rounds'
-        watch4 = Debug.watch "survivors" (length (filter (\p -> p.alive) players))
 
     in
         { game | players = players'
-               , viewport = viewport
+               , gamearea = gamearea
                , state = nextState
-               , rounds = rounds'
+               , round = round'
         }
 
 
 initPlayer : (Int, Int) -> Time -> Player-> Player
-initPlayer viewport time player =
+initPlayer gamearea time player =
     let
         seed = (truncate (inMilliseconds time)) + player.id
 
     in
         { player | angle = randomAngle seed
-                 , path = [Visible (randomPoint seed viewport)]
+                 , path = [Visible (randomPosition seed gamearea)]
                  , alive = True
         }
 
 
 updatePlayer : Time -> (Int, Int) -> Time -> List Player -> Player -> Player
-updatePlayer delta viewport time allPlayers player =
+updatePlayer delta gamearea time allPlayers player =
     if not player.alive then
         player
 
@@ -197,7 +193,7 @@ updatePlayer delta viewport time allPlayers player =
                 any (hitSnake playerPosition) paths'
 
             hw =
-                hitWall playerPosition viewport
+                hitWall playerPosition gamearea
 
             winner =
                 if length (filter (\p -> p.alive) allPlayers) < 2 then
@@ -208,7 +204,7 @@ updatePlayer delta viewport time allPlayers player =
 
         in
             if hs || hw then
-                { player | alive = False }
+                { player' | alive = False }
 
             else if winner then
                 { player' | score = player'.score + 1
@@ -222,22 +218,17 @@ updatePlayer delta viewport time allPlayers player =
 move : Time -> Player -> Player
 move delta player =
     let
-        point =
+        position =
             Maybe.withDefault (Visible (0, 0)) (head player.path)
 
         (x, y) =
-            asXY point
+            asXY position
 
         angle =
             case player.direction of
-                Left ->
-                    player.angle + maxAngleChange
-
-                Right ->
-                    player.angle + -maxAngleChange
-
-                Straight ->
-                    player.angle
+                Left -> player.angle + maxAngleChange
+                Right -> player.angle + -maxAngleChange
+                Straight -> player.angle
 
         vx =
             cos (angle * pi / 180)
@@ -282,13 +273,9 @@ randomHole seedInt =
             Random.generate (Random.int 0 150) seed
 
     in
+        -- One chance out of 150 for n to be 1
         if n == 1 then
-            let
-                (length, _) =
-                    Random.generate (Random.int 5 25) seed
-
-            in
-                length
+            fst (Random.generate (Random.int 5 10) seed)
 
         else
             0
@@ -307,8 +294,8 @@ randomAngle seedInt =
         toFloat n
 
 
-randomPoint : Int -> (Int, Int) -> (Float, Float)
-randomPoint seedInt (w, h) =
+randomPosition : Int -> (Int, Int) -> (Float, Float)
+randomPosition seedInt (w, h) =
     let
         seed =
             Random.initialSeed seedInt
@@ -329,28 +316,28 @@ near n c m =
     m >= n-c && m <= n+c
 
 
-hitSnake : Point (Float, Float) -> Point (Float, Float) -> Bool
-hitSnake point1 point2 =
+hitSnake : Position (Float, Float) -> Position (Float, Float) -> Bool
+hitSnake position1 position2 =
     let
         (x1, y1) =
-            asXY point1
+            asXY position1
 
         (x2, y2) =
-            asXY point2
+            asXY position2
 
     in
         near x1 1.9 x2
         && near y1 1.9 y2
 
 
-hitWall : Point (Float, Float) -> (Int, Int) -> Bool
-hitWall point (w, h) =
+hitWall : Position (Float, Float) -> (Int, Int) -> Bool
+hitWall position (w, h) =
     let
         (w', h') =
             (toFloat w, toFloat h)
 
     in
-        case point of
+        case position of
             Visible (x, y) ->
                 if      x >= (w' / 2)  then True
                 else if x <= -(w' / 2) then True
@@ -365,11 +352,11 @@ hitWall point (w, h) =
 -- VIEW
 
 
-view : Game -> Element
+view : Game -> Html
 view game =
     let
         (w, h) =
-            game.viewport
+            game.gamearea
 
         (w', h') =
             (toFloat w, toFloat h)
@@ -378,12 +365,16 @@ view game =
             (map renderPlayer game.players)
 
     in
-        collage w h
-            (append
-                [ rect w' h'
-                    |> filled (rgb 000 000 000)
-                ] (concat lines)
-            )
+        main' [ style [ ("position", "relative") ] ]
+              [ fromElement (collage w h
+                    (append
+                        [ rect w' h'
+                            |> filled (rgb 000 000 000)
+                        ] (concat lines)
+                    )
+                )
+              , sidebar game
+              ]
 
 
 renderPlayer : Player -> List Form
@@ -398,44 +389,73 @@ renderPlayer player =
         visibleCoords =
             filter isGroupOfVisibles coords
 
-        points =
+        positions =
             map (\pts -> map asXY pts) visibleCoords
 
     in
-        map (\pts -> traced lineStyle (path pts)) points
+        map (\pts -> traced lineStyle (path pts)) positions
+
+
+sidebar game =
+    div [ style [ ("position", "absolute")
+                , ("right", "0")
+                , ("top", "0")
+                , ("width", (toString sidebarWidth) ++ "px")
+                , ("height", "100%")
+                , ("backgroundColor", "black")
+                , ("borderLeft", (toString sidebarBorderWidth) ++ "px solid white")
+                , ("color", "white")
+                , ("textAlign", "center")
+                ]
+        ]
+        [ h2 [] [(Html.text ((toString game.state) ++ "!"))]
+        , h3 [] [(Html.text ("Round: " ++ toString game.round))]
+        , ol [ style [ ("textAlign", "left"), ("color", "white") ] ] (map scoreboardPlayer (sortBy .score game.players |> reverse))
+        , p  [ style [ ("color", "grey") ] ] [(Html.text "Press space to start a round")]
+        ]
+
+
+scoreboardPlayer {id, score, color} =
+    li [ key (toString id), style [ ("color", (colorToString color)) ] ]
+       [ Html.text ("Player " ++ (toString id) ++ " -- " ++ (toString score) ++ " wins") ]
+
+
+colorToString c =
+    let { red, green, blue } = toRgb c
+    in
+        "rgb(" ++ (toString red)
+        ++ "," ++ (toString green)
+        ++ "," ++ (toString blue)
+        ++ ")"
+
+
+--startScreen game = form
+--roundoverScreen game = form
+--gameoverScreen game = form
 
 
 -- HELPERS
 
 
-asXY : Point (Float, Float) -> (Float, Float)
-asXY point =
-    case point of
-        Visible (x, y) ->
-            (x, y)
-
-        Hidden (x, y) ->
-            (x, y)
+asXY : Position (Float, Float) -> (Float, Float)
+asXY position =
+    case position of
+        Visible (x, y) -> (x, y)
+        Hidden (x, y) -> (x, y)
 
 
-isGroupOfVisibles : List (Point (Float, Float)) -> Bool
-isGroupOfVisibles points =
-    case points of
-        [] ->
-            False
-
-        p :: _ ->
-            isVisible p
+isGroupOfVisibles : List (Position (Float, Float)) -> Bool
+isGroupOfVisibles positions =
+    case positions of
+        [] -> False
+        p :: _ -> isVisible p
 
 
-isVisible : Point (Float, Float) -> Bool
-isVisible point =
-    case point of
-        Visible _ ->
-            True
-
-        Hidden _ ->
-            False
+isVisible : Position (Float, Float) -> Bool
+isVisible position =
+    case position of
+        Visible _ -> True
+        Hidden _ -> False
 
 
 -- Usage:
@@ -443,24 +463,23 @@ isVisible point =
 -- foldr toGroups [] [Visible (0,1), Visible (0,2), Hidden (0,3), Hidden (0,4), Visible (0,5)]
 -- ->
 -- [[Visible (0,1), Visible (0,2)], [Hidden (0,3) ,Hidden (0,4)], [Visible (0,5)]]
-toGroups : Point (Float, Float) -> List (List (Point (Float, Float))) -> List (List (Point (Float, Float)))
-toGroups point acc =
+toGroups : Position (Float, Float) -> List (List (Position (Float, Float))) -> List (List (Position (Float, Float)))
+toGroups position acc =
     case acc of
         [] ->
-            [point] :: acc
+            [position] :: acc
 
         x :: xs ->
             case x of
                 [] ->
-                    [point] :: acc
+                    [position] :: acc
 
                 y :: ys ->
-                    if isVisible y && isVisible point then
-                        (point :: x) :: xs
+                    if isVisible y && isVisible position then
+                        (position :: x) :: xs
 
                     else
-                        [point] :: acc
-
+                        [position] :: acc
 
 
 mapInputs : List Player -> Set.Set Char.KeyCode -> List Player
@@ -494,7 +513,7 @@ toDirection keys player =
 -- SIGNALS
 
 
-main : Signal Element
+main : Signal Html
 main =
     Signal.map view gameState
 
@@ -516,5 +535,5 @@ input game =
             Keyboard.space
             Keyboard.keysDown
             delta
-            Window.dimensions
+            (Signal.map (\(w, h) -> (w-sidebarWidth-sidebarBorderWidth, h)) Window.dimensions)
             (every millisecond)
