@@ -40,6 +40,7 @@ type alias Player =
     , leftKey: Char.KeyCode
     , rightKey: Char.KeyCode
     , hole: Int
+    , keyDesc: String
     }
 
 
@@ -79,6 +80,7 @@ player1 =
     , leftKey = (Char.toCode 'Z')
     , rightKey = (Char.toCode 'X')
     , hole = 0
+    , keyDesc = "Z,X"
     }
 
 
@@ -88,6 +90,7 @@ player2 =
               , color = rgb 229 49 39
               , leftKey = 40
               , rightKey = 39
+              , keyDesc = "UP,DN"
     }
 
 
@@ -97,6 +100,7 @@ player3 =
               , color = rgb 25 100 183
               , leftKey = (Char.toCode 'N')
               , rightKey = (Char.toCode 'M')
+              , keyDesc = "N,M"
     }
 
 
@@ -455,10 +459,23 @@ sidebar game =
                 , ("borderLeft", (toString sidebarBorderWidth) ++ "px solid white")
                 , ("color", "white")
                 , ("textAlign", "center")
+                , ("fontFamily", "monospace")
                 ]
         ]
         [ h1 [] [(Html.text "LEBENS")]
-        , h2 [] [(Html.text ((toString game.state)))]
+        , h2 [] [(Html.text (case game.state of
+                Select ->
+                     "Select no of players"
+
+                Start ->
+                    ""
+
+                Play ->
+                    "Game on!"
+
+                Roundover ->
+                    "Round finished!"
+          ))]
         , (if game.state == Select then
                 start
             else
@@ -475,15 +492,22 @@ scoreboard game =
            ]
 
 
-scoreboardPlayer {id, score, color} =
+scoreboardPlayer {keyDesc, id, score, color} =
     li [ key (toString id), style [ ("color", (colorToString color)) ] ]
-       [ Html.text ("Player " ++ (toString id) ++ " -- " ++ (toString score) ++ " wins") ]
+       [ Html.text ("Player "
+                    ++ (toString id)
+                    ++ " ("
+                    ++ keyDesc
+                    ++ ") -- "
+                    ++ (toString score)
+                    ++ " wins")
+       ]
 
 
 start =
     div [] [ ul [ style [ ("textAlign", "left"), ("color", "grey") ] ]
-                [ li [] [ (Html.text "Press (2) for two players") ]
-                , li [] [ (Html.text "Press (3) for three players") ]
+                [ li [] [ (Html.text "Press <2> for two players") ]
+                , li [] [ (Html.text "Press <3> for three players") ]
                 ]
            ]
 
