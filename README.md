@@ -4,6 +4,6 @@ A browser based clone of Achtung, die Kurve! (also known as Zatacka) written in 
 
 ![screenshot](screenshot.png)
 
-## Develop
+## Run locally
 
 Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reactor)
