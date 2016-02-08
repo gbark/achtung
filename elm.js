@@ -12518,13 +12518,13 @@ Elm.Main.make = function (_elm) {
                           return _p36;
                        }
                  } else return _p36;
-            case "Roundover": return _p36;
-            default: return _U.eq(_p38,Start) || _U.eq(_p38,
+            case "Play": return _U.eq(_p38,Start) || _U.eq(_p38,
               Roundover) ? A2($List.map,
               A2(initPlayer,_p39,_p42),
               _p36) : A2($List.map,
               A4(updatePlayer,_p30.delta,_p39,_p42,_p36),
-              A2(mapInputs,_p36,_p40));}
+              A2(mapInputs,_p36,_p40));
+            default: return _p36;}
       }();
       return _U.update(_p31,
       {players: players$
