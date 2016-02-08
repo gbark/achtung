@@ -102,8 +102,8 @@ player3 =
 
 defaultGame : Game
 defaultGame =
-    { players = [player1, player2, player3]
-    , state = Start
+    { players = []
+    , state = Select
     , gamearea = (0, 0)
     , round = 0
     }
@@ -115,20 +115,38 @@ defaultGame =
 update : Input -> Game -> Game
 update {space, keys, delta, gamearea, time} ({players, state, round} as game) =
     let
+        playersSelected =
+            playerSelect keys
+
         nextState =
-            if space then
-                case state of
-                    Select -> Select
-                    Start -> Play
-                    Play -> Play
-                    Roundover -> Play
+            case state of
+                Select ->
+                    if playersSelected /= Nothing then
+                        Start
 
-            else
-                if length (filter (\p -> p.alive) players) == 0 then
-                   Roundover
+                    else
+                        Select
 
-                else
-                    state
+                Start ->
+                    if space then
+                        Play
+
+                    else
+                        Start
+
+                Play ->
+                    if length (filter (\p -> p.alive) players) == 0 then
+                        Roundover
+
+                    else
+                        Play
+
+                Roundover ->
+                    if space then
+                        Play
+
+                    else
+                        Roundover
 
         round' =
             if state == Play && nextState == Roundover then
@@ -139,9 +157,28 @@ update {space, keys, delta, gamearea, time} ({players, state, round} as game) =
 
         players' =
             case nextState of
-                Select -> players
-                Start -> players
-                Roundover -> players
+                Select ->
+                    players
+
+                Start ->
+                    if state == Select then
+                        case playersSelected of
+                            Just n ->
+                                if n == 2 then
+                                    [player1, player2]
+
+                                else if n == 3 then
+                                    [player1, player2, player3]
+
+                                else
+                                    []
+
+                            Nothing ->
+                                players
+
+                    else
+                        players
+
                 Play ->
                     if state == Start || state == Roundover then
                         map (initPlayer gamearea time) players
@@ -149,6 +186,9 @@ update {space, keys, delta, gamearea, time} ({players, state, round} as game) =
                     else
                         map (updatePlayer delta gamearea time players)
                         (mapInputs players keys)
+
+                Roundover ->
+                    players
 
     in
         { game | players = players'
@@ -417,16 +457,57 @@ sidebar game =
                 , ("textAlign", "center")
                 ]
         ]
-        [ h2 [] [(Html.text ((toString game.state) ++ "!"))]
-        , h3 [] [(Html.text ("Round: " ++ toString game.round))]
-        , ol [ style [ ("textAlign", "left"), ("color", "white") ] ] (map scoreboardPlayer (sortBy .score game.players |> reverse))
-        , p  [ style [ ("color", "grey") ] ] [(Html.text "Press space to start a round")]
+        [ h1 [] [(Html.text "LEBENS")]
+        , h2 [] [(Html.text ((toString game.state)))]
+        , (if game.state == Select then
+                start
+            else
+                (scoreboard game)
+          )
+        , info
         ]
+
+
+scoreboard game =
+    div [] [ h3 [] [(Html.text ("Round: " ++ toString game.round))]
+           , ol [ style [ ("textAlign", "left") ] ] (map scoreboardPlayer (sortBy .score game.players |> reverse))
+           , p  [ style [ ("color", "grey") ] ] [(Html.text "Press space to start")]
+           ]
 
 
 scoreboardPlayer {id, score, color} =
     li [ key (toString id), style [ ("color", (colorToString color)) ] ]
        [ Html.text ("Player " ++ (toString id) ++ " -- " ++ (toString score) ++ " wins") ]
+
+
+start =
+    div [] [ ul [ style [ ("textAlign", "left"), ("color", "grey") ] ]
+                [ li [] [ (Html.text "Press (2) for two players") ]
+                , li [] [ (Html.text "Press (3) for three players") ]
+                ]
+           ]
+
+
+info =
+    div [ style [ ("color", "grey")
+                , ("position", "absolute")
+                , ("bottom", "10px")
+                , ("display", "block")
+                , ("width", "100%")
+                ]
+        ]
+        [ p []
+            [ (Html.text "Made in ")
+            , a [ href "http://www.elm-lang.org/" ]
+                [ (Html.text "Elm") ]
+            , br [] []
+            , a [ href "https://github.com/gbark/lebens" ]
+                [ (Html.text "Fork me on Github") ]
+            ]
+        ]
+
+
+-- HELPERS
 
 
 colorToString c =
@@ -436,14 +517,6 @@ colorToString c =
         ++ "," ++ (toString green)
         ++ "," ++ (toString blue)
         ++ ")"
-
-
---startScreen game = form
---roundoverScreen game = form
---gameoverScreen game = form
-
-
--- HELPERS
 
 
 asXY : Position (Float, Float) -> (Float, Float)
@@ -502,10 +575,7 @@ mapInputs players keys =
 
 toDirection : Set.Set Char.KeyCode -> Player -> Direction
 toDirection keys player =
-    if Set.isEmpty keys then
-        Straight
-
-    else if Set.member player.leftKey keys
+    if Set.member player.leftKey keys
          && Set.member player.rightKey keys then
         Straight
 
@@ -517,6 +587,18 @@ toDirection keys player =
 
     else
         Straight
+
+
+playerSelect : Set.Set Char.KeyCode -> Maybe Int
+playerSelect keys =
+    if Set.member 50 keys then
+        Just 2
+
+    else if Set.member 51 keys then
+        Just 3
+
+    else
+        Nothing
 
 
 -- SIGNALS

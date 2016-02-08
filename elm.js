@@ -12082,6 +12082,13 @@ Elm.Main.make = function (_elm) {
    $Window = Elm.Window.make(_elm);
    var _op = {};
    var delta = A2($Signal.map,$Time.inSeconds,$Time.fps(35));
+   var playerSelect = function (keys) {
+      return A2($Set.member,
+      50,
+      keys) ? $Maybe.Just(2) : A2($Set.member,
+      51,
+      keys) ? $Maybe.Just(3) : $Maybe.Nothing;
+   };
    var isVisible = function (position) {
       var _p0 = position;
       if (_p0.ctor === "Visible") {
@@ -12139,6 +12146,37 @@ Elm.Main.make = function (_elm) {
       ",",
       A2($Basics._op["++"],$Basics.toString(blue),")"))))));
    };
+   var info = A2($Html.div,
+   _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                            ,_0: "color"
+                                            ,_1: "grey"}
+                                           ,{ctor: "_Tuple2",_0: "position",_1: "absolute"}
+                                           ,{ctor: "_Tuple2",_0: "bottom",_1: "10px"}
+                                           ,{ctor: "_Tuple2",_0: "display",_1: "block"}
+                                           ,{ctor: "_Tuple2",_0: "width",_1: "100%"}]))]),
+   _U.list([A2($Html.p,
+   _U.list([]),
+   _U.list([$Html.text("Made in ")
+           ,A2($Html.a,
+           _U.list([$Html$Attributes.href("http://www.elm-lang.org/")]),
+           _U.list([$Html.text("Elm")]))
+           ,A2($Html.br,_U.list([]),_U.list([]))
+           ,A2($Html.a,
+           _U.list([$Html$Attributes.href("https://github.com/gbark/lebens")]),
+           _U.list([$Html.text("Fork me on Github")]))]))]));
+   var start = A2($Html.div,
+   _U.list([]),
+   _U.list([A2($Html.ul,
+   _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                            ,_0: "textAlign"
+                                            ,_1: "left"}
+                                           ,{ctor: "_Tuple2",_0: "color",_1: "grey"}]))]),
+   _U.list([A2($Html.li,
+           _U.list([]),
+           _U.list([$Html.text("Press (2) for two players")]))
+           ,A2($Html.li,
+           _U.list([]),
+           _U.list([$Html.text("Press (3) for three players")]))]))]));
    var scoreboardPlayer = function (_p7) {
       var _p8 = _p7;
       var _p9 = _p8.id;
@@ -12156,6 +12194,31 @@ Elm.Main.make = function (_elm) {
       A2($Basics._op["++"],
       $Basics.toString(_p8.score),
       " wins")))))]));
+   };
+   var scoreboard = function (game) {
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.h3,
+              _U.list([]),
+              _U.list([$Html.text(A2($Basics._op["++"],
+              "Round: ",
+              $Basics.toString(game.round)))]))
+              ,A2($Html.ol,
+              _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                                       ,_0: "textAlign"
+                                                       ,_1: "left"}]))]),
+              A2($List.map,
+              scoreboardPlayer,
+              $List.reverse(A2($List.sortBy,
+              function (_) {
+                 return _.score;
+              },
+              game.players))))
+              ,A2($Html.p,
+              _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                                       ,_0: "color"
+                                                       ,_1: "grey"}]))]),
+              _U.list([$Html.text("Press space to start")]))]));
    };
    var renderPlayer = function (player) {
       var lineStyle = $Graphics$Collage.solid(player.color);
@@ -12239,77 +12302,6 @@ Elm.Main.make = function (_elm) {
    };
    var sidebarBorderWidth = 5;
    var sidebarWidth = 250;
-   var sidebar = function (game) {
-      return A2($Html.div,
-      _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
-                                               ,_0: "position"
-                                               ,_1: "absolute"}
-                                              ,{ctor: "_Tuple2",_0: "right",_1: "0"}
-                                              ,{ctor: "_Tuple2",_0: "top",_1: "0"}
-                                              ,{ctor: "_Tuple2"
-                                               ,_0: "width"
-                                               ,_1: A2($Basics._op["++"],$Basics.toString(sidebarWidth),"px")}
-                                              ,{ctor: "_Tuple2",_0: "height",_1: "100%"}
-                                              ,{ctor: "_Tuple2",_0: "backgroundColor",_1: "black"}
-                                              ,{ctor: "_Tuple2"
-                                               ,_0: "borderLeft"
-                                               ,_1: A2($Basics._op["++"],
-                                               $Basics.toString(sidebarBorderWidth),
-                                               "px solid white")}
-                                              ,{ctor: "_Tuple2",_0: "color",_1: "white"}
-                                              ,{ctor: "_Tuple2",_0: "textAlign",_1: "center"}]))]),
-      _U.list([A2($Html.h2,
-              _U.list([]),
-              _U.list([$Html.text(A2($Basics._op["++"],
-              $Basics.toString(game.state),
-              "!"))]))
-              ,A2($Html.h3,
-              _U.list([]),
-              _U.list([$Html.text(A2($Basics._op["++"],
-              "Round: ",
-              $Basics.toString(game.round)))]))
-              ,A2($Html.ol,
-              _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
-                                                       ,_0: "textAlign"
-                                                       ,_1: "left"}
-                                                      ,{ctor: "_Tuple2",_0: "color",_1: "white"}]))]),
-              A2($List.map,
-              scoreboardPlayer,
-              $List.reverse(A2($List.sortBy,
-              function (_) {
-                 return _.score;
-              },
-              game.players))))
-              ,A2($Html.p,
-              _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
-                                                       ,_0: "color"
-                                                       ,_1: "grey"}]))]),
-              _U.list([$Html.text("Press space to start a round")]))]));
-   };
-   var view = function (game) {
-      var lines = A2($List.map,renderPlayer,game.players);
-      var _p24 = game.gamearea;
-      var w = _p24._0;
-      var h = _p24._1;
-      var _p25 = {ctor: "_Tuple2"
-                 ,_0: $Basics.toFloat(w)
-                 ,_1: $Basics.toFloat(h)};
-      var w$ = _p25._0;
-      var h$ = _p25._1;
-      return A2($Html.main$,
-      _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
-                                               ,_0: "position"
-                                               ,_1: "relative"}]))]),
-      _U.list([$Html.fromElement(A3($Graphics$Collage.collage,
-              w,
-              h,
-              A2($List.append,
-              _U.list([A2($Graphics$Collage.filled,
-              A3($Color.rgb,0,0,0),
-              A2($Graphics$Collage.rect,w$,h$))]),
-              $List.concat(lines))))
-              ,sidebar(game)]));
-   };
    var speed = 125;
    var maxAngleChange = 5;
    var Hidden = function (a) {    return {ctor: "Hidden",_0: a};};
@@ -12327,8 +12319,8 @@ Elm.Main.make = function (_elm) {
       var visibility = _U.cmp(player.hole,
       0) > 0 ? Hidden : Visible;
       var angle = function () {
-         var _p26 = player.direction;
-         switch (_p26.ctor)
+         var _p24 = player.direction;
+         switch (_p24.ctor)
          {case "Left": return player.angle + maxAngleChange;
             case "Right": return player.angle + (0 - maxAngleChange);
             default: return player.angle;}
@@ -12338,9 +12330,9 @@ Elm.Main.make = function (_elm) {
       var position = A2($Maybe.withDefault,
       Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
       $List.head(player.path));
-      var _p27 = asXY(position);
-      var x = _p27._0;
-      var y = _p27._1;
+      var _p25 = asXY(position);
+      var x = _p25._0;
+      var y = _p25._1;
       var nextX = x + vx * (delta * speed);
       var hole = _U.cmp(player.hole,
       0) < 0 ? randomHole($Basics.truncate(nextX)) : player.hole - 1;
@@ -12408,9 +12400,7 @@ Elm.Main.make = function (_elm) {
    var Right = {ctor: "Right"};
    var Left = {ctor: "Left"};
    var toDirection = F2(function (keys,player) {
-      return $Set.isEmpty(keys) ? Straight : A2($Set.member,
-      player.leftKey,
-      keys) && A2($Set.member,
+      return A2($Set.member,player.leftKey,keys) && A2($Set.member,
       player.rightKey,
       keys) ? Straight : A2($Set.member,
       player.leftKey,
@@ -12437,11 +12427,11 @@ Elm.Main.make = function (_elm) {
       $Keyboard.keysDown,
       delta,
       A2($Signal.map,
-      function (_p28) {
-         var _p29 = _p28;
+      function (_p26) {
+         var _p27 = _p26;
          return {ctor: "_Tuple2"
-                ,_0: _p29._0 - sidebarWidth - sidebarBorderWidth
-                ,_1: _p29._1};
+                ,_0: _p27._0 - sidebarWidth - sidebarBorderWidth
+                ,_1: _p27._1};
       },
       $Window.dimensions),
       $Time.every($Time.millisecond)));
@@ -12482,50 +12472,61 @@ Elm.Main.make = function (_elm) {
    var Roundover = {ctor: "Roundover"};
    var Play = {ctor: "Play"};
    var Start = {ctor: "Start"};
-   var defaultGame = {players: _U.list([player1,player2,player3])
-                     ,state: Start
+   var Select = {ctor: "Select"};
+   var defaultGame = {players: _U.list([])
+                     ,state: Select
                      ,gamearea: {ctor: "_Tuple2",_0: 0,_1: 0}
                      ,round: 0};
-   var Select = {ctor: "Select"};
-   var update = F2(function (_p31,_p30) {
-      var _p32 = _p31;
-      var _p40 = _p32.time;
-      var _p39 = _p32.gamearea;
-      var _p33 = _p30;
-      var _p38 = _p33.state;
-      var _p37 = _p33.round;
-      var _p36 = _p33.players;
+   var update = F2(function (_p29,_p28) {
+      var _p30 = _p29;
+      var _p42 = _p30.time;
+      var _p41 = _p30.space;
+      var _p40 = _p30.keys;
+      var _p39 = _p30.gamearea;
+      var _p31 = _p28;
+      var _p38 = _p31.state;
+      var _p37 = _p31.round;
+      var _p36 = _p31.players;
+      var playersSelected = playerSelect(_p40);
       var nextState = function () {
-         if (_p32.space) {
-               var _p34 = _p38;
-               switch (_p34.ctor)
-               {case "Select": return Select;
-                  case "Start": return Play;
-                  case "Play": return Play;
-                  default: return Play;}
-            } else if (_U.eq($List.length(A2($List.filter,
-            function (p) {
-               return p.alive;
-            },
-            _p36)),
-            0)) return Roundover; else return _p38;
+         var _p32 = _p38;
+         switch (_p32.ctor)
+         {case "Select": return !_U.eq(playersSelected,
+              $Maybe.Nothing) ? Start : Select;
+            case "Start": return _p41 ? Play : Start;
+            case "Play": return _U.eq($List.length(A2($List.filter,
+              function (p) {
+                 return p.alive;
+              },
+              _p36)),
+              0) ? Roundover : Play;
+            default: return _p41 ? Play : Roundover;}
       }();
       var round$ = _U.eq(_p38,Play) && _U.eq(nextState,
       Roundover) ? _p37 + 1 : _p37;
       var players$ = function () {
-         var _p35 = nextState;
-         switch (_p35.ctor)
+         var _p33 = nextState;
+         switch (_p33.ctor)
          {case "Select": return _p36;
-            case "Start": return _p36;
+            case "Start": if (_U.eq(_p38,Select)) {
+                    var _p34 = playersSelected;
+                    if (_p34.ctor === "Just") {
+                          var _p35 = _p34._0;
+                          return _U.eq(_p35,2) ? _U.list([player1,player2]) : _U.eq(_p35,
+                          3) ? _U.list([player1,player2,player3]) : _U.list([]);
+                       } else {
+                          return _p36;
+                       }
+                 } else return _p36;
             case "Roundover": return _p36;
             default: return _U.eq(_p38,Start) || _U.eq(_p38,
               Roundover) ? A2($List.map,
-              A2(initPlayer,_p39,_p40),
+              A2(initPlayer,_p39,_p42),
               _p36) : A2($List.map,
-              A4(updatePlayer,_p32.delta,_p39,_p40,_p36),
-              A2(mapInputs,_p36,_p32.keys));}
+              A4(updatePlayer,_p30.delta,_p39,_p42,_p36),
+              A2(mapInputs,_p36,_p40));}
       }();
-      return _U.update(_p33,
+      return _U.update(_p31,
       {players: players$
       ,gamearea: _p39
       ,state: nextState
@@ -12535,6 +12536,58 @@ Elm.Main.make = function (_elm) {
    update,
    defaultGame,
    input(defaultGame));
+   var sidebar = function (game) {
+      return A2($Html.div,
+      _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                               ,_0: "position"
+                                               ,_1: "absolute"}
+                                              ,{ctor: "_Tuple2",_0: "right",_1: "0"}
+                                              ,{ctor: "_Tuple2",_0: "top",_1: "0"}
+                                              ,{ctor: "_Tuple2"
+                                               ,_0: "width"
+                                               ,_1: A2($Basics._op["++"],$Basics.toString(sidebarWidth),"px")}
+                                              ,{ctor: "_Tuple2",_0: "height",_1: "100%"}
+                                              ,{ctor: "_Tuple2",_0: "backgroundColor",_1: "black"}
+                                              ,{ctor: "_Tuple2"
+                                               ,_0: "borderLeft"
+                                               ,_1: A2($Basics._op["++"],
+                                               $Basics.toString(sidebarBorderWidth),
+                                               "px solid white")}
+                                              ,{ctor: "_Tuple2",_0: "color",_1: "white"}
+                                              ,{ctor: "_Tuple2",_0: "textAlign",_1: "center"}]))]),
+      _U.list([A2($Html.h1,
+              _U.list([]),
+              _U.list([$Html.text("LEBENS")]))
+              ,A2($Html.h2,
+              _U.list([]),
+              _U.list([$Html.text($Basics.toString(game.state))]))
+              ,_U.eq(game.state,Select) ? start : scoreboard(game)
+              ,info]));
+   };
+   var view = function (game) {
+      var lines = A2($List.map,renderPlayer,game.players);
+      var _p43 = game.gamearea;
+      var w = _p43._0;
+      var h = _p43._1;
+      var _p44 = {ctor: "_Tuple2"
+                 ,_0: $Basics.toFloat(w)
+                 ,_1: $Basics.toFloat(h)};
+      var w$ = _p44._0;
+      var h$ = _p44._1;
+      return A2($Html.main$,
+      _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                               ,_0: "position"
+                                               ,_1: "relative"}]))]),
+      _U.list([$Html.fromElement(A3($Graphics$Collage.collage,
+              w,
+              h,
+              A2($List.append,
+              _U.list([A2($Graphics$Collage.filled,
+              A3($Color.rgb,0,0,0),
+              A2($Graphics$Collage.rect,w$,h$))]),
+              $List.concat(lines))))
+              ,sidebar(game)]));
+   };
    var main = A2($Signal.map,view,gameState);
    return _elm.Main.values = {_op: _op
                              ,Select: Select
@@ -12570,7 +12623,10 @@ Elm.Main.make = function (_elm) {
                              ,view: view
                              ,renderPlayer: renderPlayer
                              ,sidebar: sidebar
+                             ,scoreboard: scoreboard
                              ,scoreboardPlayer: scoreboardPlayer
+                             ,start: start
+                             ,info: info
                              ,colorToString: colorToString
                              ,asXY: asXY
                              ,isGroupOfVisibles: isGroupOfVisibles
@@ -12578,6 +12634,7 @@ Elm.Main.make = function (_elm) {
                              ,toGroups: toGroups
                              ,mapInputs: mapInputs
                              ,toDirection: toDirection
+                             ,playerSelect: playerSelect
                              ,main: main
                              ,gameState: gameState
                              ,delta: delta
