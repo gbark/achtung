@@ -12127,10 +12127,10 @@ Elm.Main.make = function (_elm) {
                                            ,{ctor: "_Tuple2",_0: "color",_1: "grey"}]))]),
    _U.list([A2($Html.li,
            _U.list([]),
-           _U.list([$Html.text("Press (2) for two players")]))
+           _U.list([$Html.text("Press <2> for two players")]))
            ,A2($Html.li,
            _U.list([]),
-           _U.list([$Html.text("Press (3) for three players")]))]))]));
+           _U.list([$Html.text("Press <3> for three players")]))]))]));
    var scoreboardPlayer = function (_p7) {
       var _p8 = _p7;
       var _p9 = _p8.id;
@@ -12144,10 +12144,14 @@ Elm.Main.make = function (_elm) {
       A2($Basics._op["++"],
       $Basics.toString(_p9),
       A2($Basics._op["++"],
-      " -- ",
+      " (",
+      A2($Basics._op["++"],
+      _p8.keyDesc,
+      A2($Basics._op["++"],
+      ") -- ",
       A2($Basics._op["++"],
       $Basics.toString(_p8.score),
-      " wins")))))]));
+      " wins")))))))]));
    };
    var scoreboard = function (game) {
       return A2($Html.div,
@@ -12340,17 +12344,20 @@ Elm.Main.make = function (_elm) {
                  ,color: A3($Color.rgb,254,221,3)
                  ,leftKey: $Char.toCode(_U.chr("Z"))
                  ,rightKey: $Char.toCode(_U.chr("X"))
-                 ,hole: 0};
+                 ,hole: 0
+                 ,keyDesc: "Z,X"};
    var player2 = _U.update(player1,
    {id: 2
    ,color: A3($Color.rgb,229,49,39)
    ,leftKey: 40
-   ,rightKey: 39});
+   ,rightKey: 39
+   ,keyDesc: "UP,DN"});
    var player3 = _U.update(player1,
    {id: 3
    ,color: A3($Color.rgb,25,100,183)
    ,leftKey: $Char.toCode(_U.chr("N"))
-   ,rightKey: $Char.toCode(_U.chr("M"))});
+   ,rightKey: $Char.toCode(_U.chr("M"))
+   ,keyDesc: "N,M"});
    var Right = {ctor: "Right"};
    var Left = {ctor: "Left"};
    var toDirection = F2(function (keys,player) {
@@ -12400,16 +12407,19 @@ Elm.Main.make = function (_elm) {
                         return function (h) {
                            return function (i) {
                               return function (j) {
-                                 return {id: a
-                                        ,path: b
-                                        ,angle: c
-                                        ,direction: d
-                                        ,alive: e
-                                        ,score: f
-                                        ,color: g
-                                        ,leftKey: h
-                                        ,rightKey: i
-                                        ,hole: j};
+                                 return function (k) {
+                                    return {id: a
+                                           ,path: b
+                                           ,angle: c
+                                           ,direction: d
+                                           ,alive: e
+                                           ,score: f
+                                           ,color: g
+                                           ,leftKey: h
+                                           ,rightKey: i
+                                           ,hole: j
+                                           ,keyDesc: k};
+                                 };
                               };
                            };
                         };
@@ -12508,26 +12518,34 @@ Elm.Main.make = function (_elm) {
                                                $Basics.toString(sidebarBorderWidth),
                                                "px solid white")}
                                               ,{ctor: "_Tuple2",_0: "color",_1: "white"}
-                                              ,{ctor: "_Tuple2",_0: "textAlign",_1: "center"}]))]),
+                                              ,{ctor: "_Tuple2",_0: "textAlign",_1: "center"}
+                                              ,{ctor: "_Tuple2",_0: "fontFamily",_1: "monospace"}]))]),
       _U.list([A2($Html.h1,
               _U.list([]),
               _U.list([$Html.text("LEBENS")]))
               ,A2($Html.h2,
               _U.list([]),
-              _U.list([$Html.text($Basics.toString(game.state))]))
+              _U.list([$Html.text(function () {
+                 var _p43 = game.state;
+                 switch (_p43.ctor)
+                 {case "Select": return "Select no of players";
+                    case "Start": return "";
+                    case "Play": return "Game on!";
+                    default: return "Round finished!";}
+              }())]))
               ,_U.eq(game.state,Select) ? start : scoreboard(game)
               ,info]));
    };
    var view = function (game) {
       var lines = A2($List.map,renderPlayer,game.players);
-      var _p43 = game.gamearea;
-      var w = _p43._0;
-      var h = _p43._1;
-      var _p44 = {ctor: "_Tuple2"
+      var _p44 = game.gamearea;
+      var w = _p44._0;
+      var h = _p44._1;
+      var _p45 = {ctor: "_Tuple2"
                  ,_0: $Basics.toFloat(w)
                  ,_1: $Basics.toFloat(h)};
-      var w$ = _p44._0;
-      var h$ = _p44._1;
+      var w$ = _p45._0;
+      var h$ = _p45._1;
       return A2($Html.main$,
       _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
                                                ,_0: "position"
