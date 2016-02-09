@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html><head><meta charset="UTF-8"><title>Achtung die, Kurve! -- in Elm</title><style>html,head,body { padding:0; margin:0; }
+<html><head><meta charset="UTF-8"><title>Achtung die, Kurve!</title><style>html,head,body { padding:0; margin:0; }
 body { font-family: calibri, helvetica, arial, sans-serif; }</style><script type="text/javascript">var Elm = Elm || { Native: {} };Elm.Native.Array = {};
 Elm.Native.Array.make = function(localRuntime) {
 
@@ -12460,59 +12460,66 @@ Elm.Main.make = function (_elm) {
                      ,state: Select
                      ,gamearea: {ctor: "_Tuple2",_0: 0,_1: 0}
                      ,round: 0};
-   var update = F2(function (_p29,_p28) {
+   var updateState = F2(function (_p29,_p28) {
       var _p30 = _p29;
-      var _p42 = _p30.time;
-      var _p41 = _p30.space;
-      var _p40 = _p30.keys;
-      var _p39 = _p30.gamearea;
+      var _p33 = _p30.space;
       var _p31 = _p28;
-      var _p38 = _p31.state;
-      var _p37 = _p31.round;
-      var _p36 = _p31.players;
-      var playersSelected = playerSelect(_p40);
-      var nextState = function () {
-         var _p32 = _p38;
-         switch (_p32.ctor)
-         {case "Select": return !_U.eq(playersSelected,
-              $Maybe.Nothing) ? Start : Select;
-            case "Start": return _p41 ? Play : Start;
-            case "Play": return _U.eq($List.length(A2($List.filter,
-              function (p) {
-                 return p.alive;
-              },
-              _p36)),
-              0) ? Roundover : Play;
-            default: return _p41 ? Play : Roundover;}
-      }();
-      var round$ = _U.eq(_p38,Play) && _U.eq(nextState,
-      Roundover) ? _p37 + 1 : _p37;
-      var players$ = function () {
-         var _p33 = nextState;
-         switch (_p33.ctor)
-         {case "Select": return _p36;
-            case "Start": if (_U.eq(_p38,Select)) {
-                    var _p34 = playersSelected;
-                    if (_p34.ctor === "Just") {
-                          var _p35 = _p34._0;
-                          return _U.eq(_p35,2) ? _U.list([player1,player2]) : _U.eq(_p35,
-                          3) ? _U.list([player1,player2,player3]) : _U.list([]);
-                       } else {
-                          return _p36;
-                       }
-                 } else return _p36;
-            case "Play": return _U.eq(_p38,Start) || _U.eq(_p38,
-              Roundover) ? A2($List.map,
-              A2(initPlayer,_p39,_p42),
-              _p36) : A2($List.map,
-              A4(updatePlayer,_p30.delta,_p39,_p42,_p36),
-              A2(mapInputs,_p36,_p40));
-            default: return _p36;}
-      }();
-      return _U.update(_p31,
+      var _p32 = _p31.state;
+      switch (_p32.ctor)
+      {case "Select": return !_U.eq(playerSelect(_p30.keys),
+           $Maybe.Nothing) ? Start : Select;
+         case "Start": return _p33 ? Play : Start;
+         case "Play": return _U.eq($List.length(A2($List.filter,
+           function (p) {
+              return p.alive;
+           },
+           _p31.players)),
+           0) ? Roundover : Play;
+         default: return _p33 ? Play : Roundover;}
+   });
+   var updatePlayers = F3(function (_p35,_p34,nextState) {
+      var _p36 = _p35;
+      var _p45 = _p36.time;
+      var _p44 = _p36.keys;
+      var _p43 = _p36.gamearea;
+      var _p37 = _p34;
+      var _p42 = _p37.state;
+      var _p41 = _p37.players;
+      var _p38 = nextState;
+      switch (_p38.ctor)
+      {case "Select": return _p41;
+         case "Start": if (_U.eq(_p42,Select)) {
+                 var _p39 = playerSelect(_p44);
+                 if (_p39.ctor === "Just") {
+                       var _p40 = _p39._0;
+                       return _U.eq(_p40,2) ? _U.list([player1,player2]) : _U.eq(_p40,
+                       3) ? _U.list([player1,player2,player3]) : _U.list([]);
+                    } else {
+                       return _p41;
+                    }
+              } else return _p41;
+         case "Play": return _U.eq(_p42,Start) || _U.eq(_p42,
+           Roundover) ? A2($List.map,
+           A2(initPlayer,_p43,_p45),
+           _p41) : A2($List.map,
+           A4(updatePlayer,_p36.delta,_p43,_p45,_p41),
+           A2(mapInputs,_p41,_p44));
+         default: return _p41;}
+   });
+   var update = F2(function (_p47,_p46) {
+      var _p48 = _p47;
+      var _p52 = _p48;
+      var _p49 = _p46;
+      var _p51 = _p49.round;
+      var _p50 = _p49;
+      var state$ = A2(updateState,_p52,_p50);
+      var players$ = A3(updatePlayers,_p52,_p50,state$);
+      var round$ = _U.eq(_p49.state,Play) && _U.eq(state$,
+      Roundover) ? _p51 + 1 : _p51;
+      return _U.update(_p50,
       {players: players$
-      ,gamearea: _p39
-      ,state: nextState
+      ,gamearea: _p48.gamearea
+      ,state: state$
       ,round: round$});
    });
    var gameState = A3($Signal.foldp,
@@ -12545,8 +12552,8 @@ Elm.Main.make = function (_elm) {
               ,A2($Html.h2,
               _U.list([]),
               _U.list([$Html.text(function () {
-                 var _p43 = game.state;
-                 switch (_p43.ctor)
+                 var _p53 = game.state;
+                 switch (_p53.ctor)
                  {case "Select": return "Select no of players";
                     case "Start": return "";
                     case "Play": return "Game on!";
@@ -12557,14 +12564,14 @@ Elm.Main.make = function (_elm) {
    };
    var view = function (game) {
       var lines = A2($List.map,renderPlayer,game.players);
-      var _p44 = game.gamearea;
-      var w = _p44._0;
-      var h = _p44._1;
-      var _p45 = {ctor: "_Tuple2"
+      var _p54 = game.gamearea;
+      var w = _p54._0;
+      var h = _p54._1;
+      var _p55 = {ctor: "_Tuple2"
                  ,_0: $Basics.toFloat(w)
                  ,_1: $Basics.toFloat(h)};
-      var w$ = _p45._0;
-      var h$ = _p45._1;
+      var w$ = _p55._0;
+      var h$ = _p55._1;
       return A2($Html.main$,
       _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
                                                ,_0: "position"
@@ -12603,6 +12610,8 @@ Elm.Main.make = function (_elm) {
                              ,player3: player3
                              ,defaultGame: defaultGame
                              ,update: update
+                             ,updateState: updateState
+                             ,updatePlayers: updatePlayers
                              ,initPlayer: initPlayer
                              ,updatePlayer: updatePlayer
                              ,collisionPaths: collisionPaths
