@@ -1,6 +1,6 @@
-# Lebens – [Play!](http://gbark.github.io/lebens)
+# Achtung (in Elm) – [Play!](http://gbark.github.io/achtung)
 
-A browser based clone of Achtung, die Kurve! (also known as Zatacka) written in Elm. 
+A browser based clone of **Achtung, die Kurve!** (also known as **Zatacka**) written in Elm.
 
 ![screenshot](screenshot.png)
 
