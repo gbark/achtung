@@ -479,7 +479,7 @@ sidebar game =
                 , ("fontFamily", "monospace")
                 ]
         ]
-        [ h1 [] [(Html.text "LEBENS")]
+        [ h1 [] [(Html.text "ACHTUNG, DIE KURVE!")]
         , h2 [] [(Html.text (case game.state of
                 Select ->
                      "Select no of players"
@@ -539,10 +539,10 @@ info =
         ]
         [ p []
             [ (Html.text "Made in ")
-            , a [ href "http://www.elm-lang.org/" ]
+            , a [ style [ ("color", "cyan") ], href "http://www.elm-lang.org/" ]
                 [ (Html.text "Elm") ]
             , br [] []
-            , a [ href "https://github.com/gbark/lebens" ]
+            , a [ style [ ("color", "cyan") ], href "https://github.com/gbark/achtung" ]
                 [ (Html.text "Fork me on Github") ]
             ]
         ]
