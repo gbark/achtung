@@ -118,89 +118,96 @@ defaultGame =
 
 
 update : Input -> Game -> Game
-update {space, keys, delta, gamearea, time} ({players, state, round} as game) =
+update ({space, keys, delta, gamearea, time} as input) ({players, state, round} as game) =
     let
-        playersSelected =
-            playerSelect keys
+        state' =
+            updateState input game
 
-        nextState =
-            case state of
-                Select ->
-                    if playersSelected /= Nothing then
-                        Start
-
-                    else
-                        Select
-
-                Start ->
-                    if space then
-                        Play
-
-                    else
-                        Start
-
-                Play ->
-                    if length (filter (\p -> p.alive) players) == 0 then
-                        Roundover
-
-                    else
-                        Play
-
-                Roundover ->
-                    if space then
-                        Play
-
-                    else
-                        Roundover
+        players' =
+            updatePlayers input game state'
 
         round' =
-            if state == Play && nextState == Roundover then
+            if state == Play && state' == Roundover then
                 round + 1
 
             else
                 round
 
-        players' =
-            case nextState of
-                Select ->
-                    players
-
-                Start ->
-                    if state == Select then
-                        case playersSelected of
-                            Just n ->
-                                if n == 2 then
-                                    [player1, player2]
-
-                                else if n == 3 then
-                                    [player1, player2, player3]
-
-                                else
-                                    []
-
-                            Nothing ->
-                                players
-
-                    else
-                        players
-
-                Play ->
-                    if state == Start || state == Roundover then
-                        map (initPlayer gamearea time) players
-
-                    else
-                        map (updatePlayer delta gamearea time players)
-                        (mapInputs players keys)
-
-                Roundover ->
-                    players
-
     in
         { game | players = players'
                , gamearea = gamearea
-               , state = nextState
+               , state = state'
                , round = round'
         }
+
+
+updateState : Input -> Game -> State
+updateState {space, keys} {players, state} =
+    case state of
+        Select ->
+            if (playerSelect keys) /= Nothing then
+                Start
+
+            else
+                Select
+
+        Start ->
+            if space then
+                Play
+
+            else
+                Start
+
+        Play ->
+            if length (filter (\p -> p.alive) players) == 0 then
+                Roundover
+
+            else
+                Play
+
+        Roundover ->
+            if space then
+                Play
+
+            else
+                Roundover
+
+
+updatePlayers : Input -> Game -> State -> List Player
+updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
+    case nextState of
+        Select ->
+            players
+
+        Start ->
+            if state == Select then
+                case (playerSelect keys) of
+                    Just n ->
+                        if n == 2 then
+                            [player1, player2]
+
+                        else if n == 3 then
+                            [player1, player2, player3]
+
+                        else
+                            []
+
+                    Nothing ->
+                        players
+
+            else
+                players
+
+        Play ->
+            if state == Start || state == Roundover then
+                map (initPlayer gamearea time) players
+
+            else
+                map (updatePlayer delta gamearea time players)
+                (mapInputs players keys)
+
+        Roundover ->
+            players
 
 
 initPlayer : (Int, Int) -> Time -> Player-> Player
