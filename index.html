@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html><head><meta charset="UTF-8"><title>Lebens - Achtung die Kurve in your browser</title><style>html,head,body { padding:0; margin:0; }
+<html><head><meta charset="UTF-8"><title>Main</title><style>html,head,body { padding:0; margin:0; }
 body { font-family: calibri, helvetica, arial, sans-serif; }</style><script type="text/javascript">var Elm = Elm || { Native: {} };Elm.Native.Array = {};
 Elm.Native.Array.make = function(localRuntime) {
 
@@ -12178,23 +12178,6 @@ Elm.Main.make = function (_elm) {
                                                        ,_1: "grey"}]))]),
               _U.list([$Html.text("Press space to start")]))]));
    };
-   var renderPlayer = function (player) {
-      var lineStyle = $Graphics$Collage.solid(player.color);
-      var coords = A3($List.foldr,toGroups,_U.list([]),player.path);
-      var visibleCoords = A2($List.filter,isGroupOfVisibles,coords);
-      var positions = A2($List.map,
-      function (pts) {
-         return A2($List.map,asXY,pts);
-      },
-      visibleCoords);
-      return A2($List.map,
-      function (pts) {
-         return A2($Graphics$Collage.traced,
-         lineStyle,
-         $Graphics$Collage.path(pts));
-      },
-      positions);
-   };
    var hitWall = F2(function (position,_p10) {
       var _p11 = _p10;
       var _p12 = {ctor: "_Tuple2"
@@ -12217,49 +12200,87 @@ Elm.Main.make = function (_elm) {
    var near = F3(function (n,c,m) {
       return _U.cmp(m,n - c) > -1 && _U.cmp(m,n + c) < 1;
    });
-   var hitSnake = F2(function (position1,position2) {
-      var _p16 = asXY(position2);
-      var x2 = _p16._0;
-      var y2 = _p16._1;
-      var _p17 = asXY(position1);
-      var x1 = _p17._0;
-      var y1 = _p17._1;
-      return A3(near,x1,1.9,x2) && A3(near,y1,1.9,y2);
-   });
-   var randomPosition = F2(function (seedInt,_p18) {
-      var _p19 = _p18;
+   var randomPosition = F2(function (seedInt,_p16) {
+      var _p17 = _p16;
       var safetyMargin = 500;
-      var w$ = _p19._0 - safetyMargin;
-      var h$ = _p19._1 - safetyMargin;
+      var w$ = _p17._0 - safetyMargin;
+      var h$ = _p17._1 - safetyMargin;
       var seed = $Random.initialSeed(seedInt);
-      var _p20 = A2($Random.generate,
+      var _p18 = A2($Random.generate,
       A2($Random.$int,w$ / 2 | 0,0 - (w$ / 2 | 0)),
       seed);
-      var x = _p20._0;
-      var _p21 = A2($Random.generate,
+      var x = _p18._0;
+      var _p19 = A2($Random.generate,
       A2($Random.$int,h$ / 2 | 0,0 - (h$ / 2 | 0)),
       seed);
-      var y = _p21._0;
+      var y = _p19._0;
       return {ctor: "_Tuple2"
              ,_0: $Basics.toFloat(x)
              ,_1: $Basics.toFloat(y)};
    });
    var randomAngle = function (seedInt) {
       var seed = $Random.initialSeed(seedInt);
-      var _p22 = A2($Random.generate,A2($Random.$int,0,360),seed);
-      var n = _p22._0;
+      var _p20 = A2($Random.generate,A2($Random.$int,0,360),seed);
+      var n = _p20._0;
       return $Basics.toFloat(n);
    };
    var randomHole = function (seedInt) {
       var seed = $Random.initialSeed(seedInt);
-      var _p23 = A2($Random.generate,A2($Random.$int,0,150),seed);
-      var n = _p23._0;
+      var _p21 = A2($Random.generate,A2($Random.$int,0,150),seed);
+      var n = _p21._0;
       return _U.eq(n,1) ? $Basics.fst(A2($Random.generate,
       A2($Random.$int,5,10),
       seed)) : 0;
    };
+   var collisionPaths = F2(function (player,players) {
+      var myPath = A2($List.drop,10,player.path);
+      var others = A2($List.filter,
+      function (p) {
+         return !_U.eq(p.id,player.id);
+      },
+      players);
+      var otherPaths = A3($List.foldl,
+      F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
+      _U.list([]),
+      others);
+      return A2($List.filter,
+      function (p) {
+         return isVisible(p);
+      },
+      $List.concat(_U.list([myPath,otherPaths])));
+   });
    var sidebarBorderWidth = 5;
    var sidebarWidth = 250;
+   var snakeWidth = 3;
+   var hitSnake = F2(function (position1,position2) {
+      var _p22 = asXY(position2);
+      var x2 = _p22._0;
+      var y2 = _p22._1;
+      var _p23 = asXY(position1);
+      var x1 = _p23._0;
+      var y1 = _p23._1;
+      return A3(near,x1,snakeWidth,x2) && A3(near,y1,snakeWidth,y2);
+   });
+   var renderPlayer = function (player) {
+      var lineStyle = _U.update($Graphics$Collage.defaultLine,
+      {width: snakeWidth
+      ,color: player.color
+      ,cap: $Graphics$Collage.Round});
+      var coords = A3($List.foldr,toGroups,_U.list([]),player.path);
+      var visibleCoords = A2($List.filter,isGroupOfVisibles,coords);
+      var positions = A2($List.map,
+      function (pts) {
+         return A2($List.map,asXY,pts);
+      },
+      visibleCoords);
+      return A2($List.map,
+      function (pts) {
+         return A2($Graphics$Collage.traced,
+         lineStyle,
+         $Graphics$Collage.path(pts));
+      },
+      positions);
+   };
    var speed = 125;
    var maxAngleChange = 5;
    var Hidden = function (a) {    return {ctor: "Hidden",_0: a};};
@@ -12305,30 +12326,22 @@ Elm.Main.make = function (_elm) {
    var updatePlayer = F5(function (delta,
    gamearea,
    time,
-   allPlayers,
+   players,
    player) {
       if ($Basics.not(player.alive)) return player; else {
             var winner = _U.cmp($List.length(A2($List.filter,
             function (p) {
                return p.alive;
             },
-            allPlayers)),
+            players)),
             2) < 0 ? true : false;
-            var paths = A3($List.foldl,
-            F2(function (p,acc) {    return A2($List.append,p.path,acc);}),
-            _U.list([]),
-            allPlayers);
-            var paths$ = A2($List.filter,
-            function (p) {
-               return isVisible(p);
-            },
-            paths);
             var player$ = A2(move,delta,player);
-            var playerPosition = A2($Maybe.withDefault,
+            var position = A2($Maybe.withDefault,
             Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
             $List.head(player$.path));
-            var hs = A2($List.any,hitSnake(playerPosition),paths$);
-            var hw = A2(hitWall,playerPosition,gamearea);
+            var hw = A2(hitWall,position,gamearea);
+            var paths = A2(collisionPaths,player$,players);
+            var hs = A2($List.any,hitSnake(position),paths);
             return hs || hw ? _U.update(player$,
             {alive: false}) : winner ? _U.update(player$,
             {score: player$.score + 1,alive: false}) : player$;
@@ -12576,6 +12589,7 @@ Elm.Main.make = function (_elm) {
                              ,Hidden: Hidden
                              ,maxAngleChange: maxAngleChange
                              ,speed: speed
+                             ,snakeWidth: snakeWidth
                              ,sidebarWidth: sidebarWidth
                              ,sidebarBorderWidth: sidebarBorderWidth
                              ,player1: player1
@@ -12585,6 +12599,7 @@ Elm.Main.make = function (_elm) {
                              ,update: update
                              ,initPlayer: initPlayer
                              ,updatePlayer: updatePlayer
+                             ,collisionPaths: collisionPaths
                              ,move: move
                              ,randomHole: randomHole
                              ,randomAngle: randomAngle
