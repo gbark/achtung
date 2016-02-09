@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html><head><meta charset="UTF-8"><title>Main</title><style>html,head,body { padding:0; margin:0; }
+<html><head><meta charset="UTF-8"><title>Achtung die, Kurve! -- in Elm</title><style>html,head,body { padding:0; margin:0; }
 body { font-family: calibri, helvetica, arial, sans-serif; }</style><script type="text/javascript">var Elm = Elm || { Native: {} };Elm.Native.Array = {};
 Elm.Native.Array.make = function(localRuntime) {
 
@@ -12112,11 +12112,17 @@ Elm.Main.make = function (_elm) {
    _U.list([]),
    _U.list([$Html.text("Made in ")
            ,A2($Html.a,
-           _U.list([$Html$Attributes.href("http://www.elm-lang.org/")]),
+           _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                                    ,_0: "color"
+                                                    ,_1: "cyan"}]))
+                   ,$Html$Attributes.href("http://www.elm-lang.org/")]),
            _U.list([$Html.text("Elm")]))
            ,A2($Html.br,_U.list([]),_U.list([]))
            ,A2($Html.a,
-           _U.list([$Html$Attributes.href("https://github.com/gbark/lebens")]),
+           _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
+                                                    ,_0: "color"
+                                                    ,_1: "cyan"}]))
+                   ,$Html$Attributes.href("https://github.com/gbark/achtung")]),
            _U.list([$Html.text("Fork me on Github")]))]))]));
    var start = A2($Html.div,
    _U.list([]),
@@ -12535,7 +12541,7 @@ Elm.Main.make = function (_elm) {
                                               ,{ctor: "_Tuple2",_0: "fontFamily",_1: "monospace"}]))]),
       _U.list([A2($Html.h1,
               _U.list([]),
-              _U.list([$Html.text("LEBENS")]))
+              _U.list([$Html.text("ACHTUNG, DIE KURVE!")]))
               ,A2($Html.h2,
               _U.list([]),
               _U.list([$Html.text(function () {
