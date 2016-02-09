@@ -370,7 +370,7 @@ randomPosition seedInt (w, h) =
             Random.initialSeed seedInt
 
         safetyMargin =
-            500
+            200
 
         w' =
             w - safetyMargin
