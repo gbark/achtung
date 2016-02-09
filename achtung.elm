@@ -39,7 +39,6 @@ type alias Player =
     , color: Color
     , leftKey: Char.KeyCode
     , rightKey: Char.KeyCode
-    , hole: Int
     , keyDesc: String
     }
 
@@ -80,7 +79,6 @@ player1 =
     , color = rgb 254 221 3
     , leftKey = (Char.toCode 'Z')
     , rightKey = (Char.toCode 'X')
-    , hole = 0
     , keyDesc = "Z,X"
     }
 
@@ -307,25 +305,31 @@ move delta player =
         nextY =
             y + vy * (delta * speed)
 
-        visibility =
-            if player.hole > 0 then
-                Hidden
-
-            else
-                Visible
-
-        hole =
-            if player.hole < 0 then
-                randomHole (truncate nextX)
-
-            else
-                player.hole - 1
+        path' =
+            puncture player.path (randomHole (truncate nextX))
 
     in
         { player | angle = angle
-                 , path = visibility (nextX, nextY) :: player.path
-                 , hole = hole
+                 , path = Visible (nextX, nextY) :: path'
         }
+
+
+puncture path length =
+    if length < 1 then
+        path
+
+    else
+        let
+            toPuncture =
+                take length path
+
+            rest =
+                drop length path
+
+            punctured = map (\p -> let (x,y) = asXY p in Hidden (x,y)) toPuncture
+
+        in
+            concat [punctured, rest]
 
 
 randomHole : Int -> Int
