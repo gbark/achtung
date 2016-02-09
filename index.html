@@ -12290,6 +12290,21 @@ Elm.Main.make = function (_elm) {
    var speed = 125;
    var maxAngleChange = 5;
    var Hidden = function (a) {    return {ctor: "Hidden",_0: a};};
+   var puncture = F2(function (path,length) {
+      if (_U.cmp(length,1) < 0) return path; else {
+            var rest = A2($List.drop,length,path);
+            var toPuncture = A2($List.take,length,path);
+            var punctured = A2($List.map,
+            function (p) {
+               var _p24 = asXY(p);
+               var x = _p24._0;
+               var y = _p24._1;
+               return Hidden({ctor: "_Tuple2",_0: x,_1: y});
+            },
+            toPuncture);
+            return $List.concat(_U.list([punctured,rest]));
+         }
+   });
    var Visible = function (a) {
       return {ctor: "Visible",_0: a};
    };
@@ -12301,11 +12316,9 @@ Elm.Main.make = function (_elm) {
       ,alive: true});
    });
    var move = F2(function (delta,player) {
-      var visibility = _U.cmp(player.hole,
-      0) > 0 ? Hidden : Visible;
       var angle = function () {
-         var _p24 = player.direction;
-         switch (_p24.ctor)
+         var _p25 = player.direction;
+         switch (_p25.ctor)
          {case "Left": return player.angle + maxAngleChange;
             case "Right": return player.angle + (0 - maxAngleChange);
             default: return player.angle;}
@@ -12315,19 +12328,19 @@ Elm.Main.make = function (_elm) {
       var position = A2($Maybe.withDefault,
       Visible({ctor: "_Tuple2",_0: 0,_1: 0}),
       $List.head(player.path));
-      var _p25 = asXY(position);
-      var x = _p25._0;
-      var y = _p25._1;
+      var _p26 = asXY(position);
+      var x = _p26._0;
+      var y = _p26._1;
       var nextX = x + vx * (delta * speed);
-      var hole = _U.cmp(player.hole,
-      0) < 0 ? randomHole($Basics.truncate(nextX)) : player.hole - 1;
+      var path$ = A2(puncture,
+      player.path,
+      randomHole($Basics.truncate(nextX)));
       var nextY = y + vy * (delta * speed);
       return _U.update(player,
       {angle: angle
       ,path: A2($List._op["::"],
-      visibility({ctor: "_Tuple2",_0: nextX,_1: nextY}),
-      player.path)
-      ,hole: hole});
+      Visible({ctor: "_Tuple2",_0: nextX,_1: nextY}),
+      path$)});
    });
    var updatePlayer = F5(function (delta,
    gamearea,
@@ -12363,7 +12376,6 @@ Elm.Main.make = function (_elm) {
                  ,color: A3($Color.rgb,254,221,3)
                  ,leftKey: $Char.toCode(_U.chr("Z"))
                  ,rightKey: $Char.toCode(_U.chr("X"))
-                 ,hole: 0
                  ,keyDesc: "Z,X"};
    var player2 = _U.update(player1,
    {id: 2
@@ -12407,11 +12419,11 @@ Elm.Main.make = function (_elm) {
       $Keyboard.keysDown,
       delta,
       A2($Signal.map,
-      function (_p26) {
-         var _p27 = _p26;
+      function (_p27) {
+         var _p28 = _p27;
          return {ctor: "_Tuple2"
-                ,_0: _p27._0 - sidebarWidth - sidebarBorderWidth
-                ,_1: _p27._1};
+                ,_0: _p28._0 - sidebarWidth - sidebarBorderWidth
+                ,_1: _p28._1};
       },
       $Window.dimensions),
       $Time.every($Time.millisecond)));
@@ -12426,19 +12438,16 @@ Elm.Main.make = function (_elm) {
                         return function (h) {
                            return function (i) {
                               return function (j) {
-                                 return function (k) {
-                                    return {id: a
-                                           ,path: b
-                                           ,angle: c
-                                           ,direction: d
-                                           ,alive: e
-                                           ,score: f
-                                           ,color: g
-                                           ,leftKey: h
-                                           ,rightKey: i
-                                           ,hole: j
-                                           ,keyDesc: k};
-                                 };
+                                 return {id: a
+                                        ,path: b
+                                        ,angle: c
+                                        ,direction: d
+                                        ,alive: e
+                                        ,score: f
+                                        ,color: g
+                                        ,leftKey: h
+                                        ,rightKey: i
+                                        ,keyDesc: j};
                               };
                            };
                         };
@@ -12460,65 +12469,65 @@ Elm.Main.make = function (_elm) {
                      ,state: Select
                      ,gamearea: {ctor: "_Tuple2",_0: 0,_1: 0}
                      ,round: 0};
-   var updateState = F2(function (_p29,_p28) {
-      var _p30 = _p29;
-      var _p33 = _p30.space;
-      var _p31 = _p28;
-      var _p32 = _p31.state;
-      switch (_p32.ctor)
-      {case "Select": return !_U.eq(playerSelect(_p30.keys),
+   var updateState = F2(function (_p30,_p29) {
+      var _p31 = _p30;
+      var _p34 = _p31.space;
+      var _p32 = _p29;
+      var _p33 = _p32.state;
+      switch (_p33.ctor)
+      {case "Select": return !_U.eq(playerSelect(_p31.keys),
            $Maybe.Nothing) ? Start : Select;
-         case "Start": return _p33 ? Play : Start;
+         case "Start": return _p34 ? Play : Start;
          case "Play": return _U.eq($List.length(A2($List.filter,
            function (p) {
               return p.alive;
            },
-           _p31.players)),
+           _p32.players)),
            0) ? Roundover : Play;
-         default: return _p33 ? Play : Roundover;}
+         default: return _p34 ? Play : Roundover;}
    });
-   var updatePlayers = F3(function (_p35,_p34,nextState) {
-      var _p36 = _p35;
-      var _p45 = _p36.time;
-      var _p44 = _p36.keys;
-      var _p43 = _p36.gamearea;
-      var _p37 = _p34;
-      var _p42 = _p37.state;
-      var _p41 = _p37.players;
-      var _p38 = nextState;
-      switch (_p38.ctor)
-      {case "Select": return _p41;
-         case "Start": if (_U.eq(_p42,Select)) {
-                 var _p39 = playerSelect(_p44);
-                 if (_p39.ctor === "Just") {
-                       var _p40 = _p39._0;
-                       return _U.eq(_p40,2) ? _U.list([player1,player2]) : _U.eq(_p40,
+   var updatePlayers = F3(function (_p36,_p35,nextState) {
+      var _p37 = _p36;
+      var _p46 = _p37.time;
+      var _p45 = _p37.keys;
+      var _p44 = _p37.gamearea;
+      var _p38 = _p35;
+      var _p43 = _p38.state;
+      var _p42 = _p38.players;
+      var _p39 = nextState;
+      switch (_p39.ctor)
+      {case "Select": return _p42;
+         case "Start": if (_U.eq(_p43,Select)) {
+                 var _p40 = playerSelect(_p45);
+                 if (_p40.ctor === "Just") {
+                       var _p41 = _p40._0;
+                       return _U.eq(_p41,2) ? _U.list([player1,player2]) : _U.eq(_p41,
                        3) ? _U.list([player1,player2,player3]) : _U.list([]);
                     } else {
-                       return _p41;
+                       return _p42;
                     }
-              } else return _p41;
-         case "Play": return _U.eq(_p42,Start) || _U.eq(_p42,
+              } else return _p42;
+         case "Play": return _U.eq(_p43,Start) || _U.eq(_p43,
            Roundover) ? A2($List.map,
-           A2(initPlayer,_p43,_p45),
-           _p41) : A2($List.map,
-           A4(updatePlayer,_p36.delta,_p43,_p45,_p41),
-           A2(mapInputs,_p41,_p44));
-         default: return _p41;}
+           A2(initPlayer,_p44,_p46),
+           _p42) : A2($List.map,
+           A4(updatePlayer,_p37.delta,_p44,_p46,_p42),
+           A2(mapInputs,_p42,_p45));
+         default: return _p42;}
    });
-   var update = F2(function (_p47,_p46) {
-      var _p48 = _p47;
-      var _p52 = _p48;
-      var _p49 = _p46;
-      var _p51 = _p49.round;
-      var _p50 = _p49;
-      var state$ = A2(updateState,_p52,_p50);
-      var players$ = A3(updatePlayers,_p52,_p50,state$);
-      var round$ = _U.eq(_p49.state,Play) && _U.eq(state$,
-      Roundover) ? _p51 + 1 : _p51;
-      return _U.update(_p50,
+   var update = F2(function (_p48,_p47) {
+      var _p49 = _p48;
+      var _p53 = _p49;
+      var _p50 = _p47;
+      var _p52 = _p50.round;
+      var _p51 = _p50;
+      var state$ = A2(updateState,_p53,_p51);
+      var players$ = A3(updatePlayers,_p53,_p51,state$);
+      var round$ = _U.eq(_p50.state,Play) && _U.eq(state$,
+      Roundover) ? _p52 + 1 : _p52;
+      return _U.update(_p51,
       {players: players$
-      ,gamearea: _p48.gamearea
+      ,gamearea: _p49.gamearea
       ,state: state$
       ,round: round$});
    });
@@ -12552,8 +12561,8 @@ Elm.Main.make = function (_elm) {
               ,A2($Html.h2,
               _U.list([]),
               _U.list([$Html.text(function () {
-                 var _p53 = game.state;
-                 switch (_p53.ctor)
+                 var _p54 = game.state;
+                 switch (_p54.ctor)
                  {case "Select": return "Select no of players";
                     case "Start": return "";
                     case "Play": return "Game on!";
@@ -12564,14 +12573,14 @@ Elm.Main.make = function (_elm) {
    };
    var view = function (game) {
       var lines = A2($List.map,renderPlayer,game.players);
-      var _p54 = game.gamearea;
-      var w = _p54._0;
-      var h = _p54._1;
-      var _p55 = {ctor: "_Tuple2"
+      var _p55 = game.gamearea;
+      var w = _p55._0;
+      var h = _p55._1;
+      var _p56 = {ctor: "_Tuple2"
                  ,_0: $Basics.toFloat(w)
                  ,_1: $Basics.toFloat(h)};
-      var w$ = _p55._0;
-      var h$ = _p55._1;
+      var w$ = _p56._0;
+      var h$ = _p56._1;
       return A2($Html.main$,
       _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2"
                                                ,_0: "position"
@@ -12616,6 +12625,7 @@ Elm.Main.make = function (_elm) {
                              ,updatePlayer: updatePlayer
                              ,collisionPaths: collisionPaths
                              ,move: move
+                             ,puncture: puncture
                              ,randomHole: randomHole
                              ,randomAngle: randomAngle
                              ,randomPosition: randomPosition
