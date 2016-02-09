@@ -64,6 +64,7 @@ type Position a = Visible a | Hidden a
 
 maxAngleChange = 5
 speed = 125
+snakeWidth = 3
 sidebarWidth = 250
 sidebarBorderWidth = 5
 
@@ -215,7 +216,7 @@ initPlayer gamearea time player =
 
 
 updatePlayer : Time -> (Int, Int) -> Time -> List Player -> Player -> Player
-updatePlayer delta gamearea time allPlayers player =
+updatePlayer delta gamearea time players player =
     if not player.alive then
         player
 
@@ -224,23 +225,20 @@ updatePlayer delta gamearea time allPlayers player =
             player' =
                 move delta player
 
-            playerPosition =
+            position =
                 Maybe.withDefault (Visible (0, 0)) (head player'.path)
 
             paths =
-                foldl (\p acc -> append p.path acc) [] allPlayers
-
-            paths' =
-                filter (\p -> isVisible p) paths
+                collisionPaths player' players
 
             hs =
-                any (hitSnake playerPosition) paths'
+                any (hitSnake position) paths
 
             hw =
-                hitWall playerPosition gamearea
+                hitWall position gamearea
 
             winner =
-                if length (filter (\p -> p.alive) allPlayers) < 2 then
+                if length (filter (\p -> p.alive) players) < 2 then
                     True
 
                 else
@@ -257,6 +255,22 @@ updatePlayer delta gamearea time allPlayers player =
 
             else
                 player'
+
+
+collisionPaths player players =
+    let
+        others =
+            filter (\p -> p.id /= player.id) players
+
+        otherPaths =
+            foldl (\p acc -> append p.path acc) [] others
+
+        -- Drop 10 positions so we dont check collisions with ourselves
+        myPath =
+            drop 10 player.path
+
+    in
+        filter (\p -> isVisible p) (concat [myPath, otherPaths])
 
 
 move : Time -> Player -> Player
@@ -379,8 +393,8 @@ hitSnake position1 position2 =
             asXY position2
 
     in
-        near x1 1.9 x2
-        && near y1 1.9 y2
+        near x1 snakeWidth x2
+        && near y1 snakeWidth y2
 
 
 hitWall : Position (Float, Float) -> (Int, Int) -> Bool
@@ -437,7 +451,10 @@ renderPlayer player =
             foldr toGroups [] player.path
 
         lineStyle =
-            solid player.color
+            { defaultLine | width = snakeWidth
+                          , color = player.color
+                          , cap = Round
+            }
 
         visibleCoords =
             filter isGroupOfVisibles coords
