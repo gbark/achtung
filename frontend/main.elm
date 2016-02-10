@@ -1,3 +1,5 @@
+module Main where
+
 import Color exposing (..)
 import Window
 import Graphics.Collage exposing (..)
@@ -322,10 +324,10 @@ puncture path length =
         let
             withMargin =
                 take (length+1) path
-                
-            margin = 
+
+            margin =
                 take 1 withMargin
-        
+
             toPuncture =
                 drop 1 withMargin
 
