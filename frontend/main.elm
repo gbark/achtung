@@ -160,7 +160,7 @@ updateState {space, keys} {players, state} =
                 Start
 
         Play ->
-            if length (filter (\p -> p.alive) players) == 0 then
+            if isEmpty <| filter (\p -> p.alive) players then
                 Roundover
 
             else
@@ -204,8 +204,7 @@ updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
                 map (initPlayer gamearea time) players
 
             else
-                map (updatePlayer delta gamearea time players)
-                (mapInputs players keys)
+                map (updatePlayer delta gamearea time players) <| mapInputs players keys
 
         Roundover ->
             players
@@ -309,7 +308,7 @@ move delta player =
             y + vy * (delta * speed)
 
         path' =
-            puncture player.path (randomHole (truncate nextX))
+            puncture player.path <| randomHole <| truncate nextX
 
     in
         { player | angle = angle
