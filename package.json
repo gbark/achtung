@@ -2,7 +2,7 @@
   "name": "achtung",
   "version": "1.0.0",
   "description": "Achtung, die Kurve -- written in Elm",
-  "main": "./bin/main.js",
+  "main": "./backend/Entry.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

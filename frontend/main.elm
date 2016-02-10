@@ -1,5 +1,6 @@
 module Main where
 
+
 import Color exposing (..)
 import Window
 import Graphics.Collage exposing (..)
