@@ -320,16 +320,22 @@ puncture path length =
 
     else
         let
+            withMargin =
+                take (length+1) path
+                
+            margin = 
+                take 1 withMargin
+        
             toPuncture =
-                take length path
+                drop 1 withMargin
 
             rest =
-                drop length path
+                drop (length+1) path
 
             punctured = map (\p -> let (x,y) = asXY p in Hidden (x,y)) toPuncture
 
         in
-            concat [punctured, rest]
+            concat [margin, punctured, rest]
 
 
 randomHole : Int -> Int
@@ -344,7 +350,7 @@ randomHole seedInt =
     in
         -- One chance out of 150 for n to be 1
         if n == 1 then
-            fst (Random.generate (Random.int 5 10) seed)
+            fst (Random.generate (Random.int 2 5) seed)
 
         else
             0
