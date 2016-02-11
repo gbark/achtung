@@ -322,10 +322,10 @@ puncture path length =
         let
             withMargin =
                 take (length+1) path
-                
-            margin = 
+
+            margin =
                 take 1 withMargin
-        
+
             toPuncture =
                 drop 1 withMargin
 
@@ -446,17 +446,14 @@ view game =
             (toFloat w, toFloat h)
 
         lines =
-            (map renderPlayer game.players)
+            map renderPlayer game.players |> concat
 
     in
         main' [ style [ ("position", "relative") ] ]
-              [ fromElement (collage w h
-                    (append
-                        [ rect w' h'
-                            |> filled (rgb 000 000 000)
-                        ] (concat lines)
-                    )
-                )
+              [ lines
+                |> append [ rect w' h' |> filled (rgb 000 000 000) ]
+                |> collage w h
+                |> fromElement
               , sidebar game
               ]
 
@@ -521,7 +518,8 @@ sidebar game =
 
 scoreboard game =
     div [] [ h3 [] [(Html.text ("Round: " ++ toString game.round))]
-           , ol [ style [ ("textAlign", "left") ] ] (map scoreboardPlayer (sortBy .score game.players |> reverse))
+           , ol [ style [ ("textAlign", "left") ] ]
+                (map scoreboardPlayer (sortBy .score game.players |> reverse))
            , p  [ style [ ("color", "grey") ] ] [(Html.text "Press space to start")]
            ]
 
