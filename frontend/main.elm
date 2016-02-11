@@ -13,6 +13,8 @@ import Set
 import Random
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import SocketIO
+import Task exposing (Task, andThen)
 
 
 -- MODEL
@@ -686,3 +688,13 @@ input game =
             delta
             (Signal.map (\(w, h) -> (w-sidebarWidth-sidebarBorderWidth, h)) Window.dimensions)
             (every millisecond)
+
+
+-- Websocket 
+
+
+socket : Task x SocketIO.Socket
+socket =
+    SocketIO.io "http://localhost:9000" SocketIO.defaultOptions
+
+
