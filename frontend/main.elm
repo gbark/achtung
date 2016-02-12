@@ -16,6 +16,8 @@ import Html.Attributes exposing (..)
 import SocketIO
 import Task exposing (Task, andThen)
 
+import Protocol exposing (..)
+
 
 -- MODEL
 
@@ -26,11 +28,16 @@ type State = Select
            | Roundover
 
 
+type Mode = Local | Online
+
+
 type alias Game =
     { players: List Player
     , state: State
+    , mode: Mode
     , gamearea: (Int, Int)
     , round: Int
+    , socketStatus: String
     }
 
 
@@ -49,12 +56,17 @@ type alias Player =
 
 
 type alias Input =
-    { space: Bool
-    , keys: Set.Set Char.KeyCode
+    { keys: Set.Set Char.KeyCode
     , delta: Time
     , gamearea: (Int, Int)
     , time: Time
+    , socketStatus: String
     }
+
+
+-- type alias Socket a =
+--     { a | status : Connecting | Connected | Disconnected
+--     }
 
 
 type Direction
@@ -112,8 +124,10 @@ defaultGame : Game
 defaultGame =
     { players = []
     , state = Select
+    , mode = Online
     , gamearea = (0, 0)
     , round = 0
+    , socketStatus = "Unknown"
     }
 
 
@@ -121,7 +135,7 @@ defaultGame =
 
 
 update : Input -> Game -> Game
-update ({space, keys, delta, gamearea, time} as input) ({players, state, round} as game) =
+update ({keys, delta, gamearea, time, socketStatus} as input) ({players, state, round} as game) =
     let
         state' =
             updateState input game
@@ -141,11 +155,12 @@ update ({space, keys, delta, gamearea, time} as input) ({players, state, round} 
                , gamearea = gamearea
                , state = state'
                , round = round'
+               , socketStatus = socketStatus
         }
 
 
 updateState : Input -> Game -> State
-updateState {space, keys} {players, state} =
+updateState {keys} {players, state} =
     case state of
         Select ->
             if (playerSelect keys) /= Nothing then
@@ -155,7 +170,7 @@ updateState {space, keys} {players, state} =
                 Select
 
         Start ->
-            if space then
+            if space keys then
                 Play
 
             else
@@ -169,7 +184,7 @@ updateState {space, keys} {players, state} =
                 Play
 
         Roundover ->
-            if space then
+            if space keys then
                 Play
 
             else
@@ -215,7 +230,7 @@ updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
 initPlayer : (Int, Int) -> Time -> Player-> Player
 initPlayer gamearea time player =
     let
-        seed = (truncate (inMilliseconds time)) + player.id
+        seed = (truncate (inMilliseconds time)) + player.id ^ 3
 
     in
         { player | angle = randomAngle seed
@@ -517,6 +532,7 @@ sidebar game =
                 (scoreboard game)
           )
         , info
+        , (Html.text game.socketStatus)
         ]
 
 
@@ -661,6 +677,11 @@ playerSelect keys =
         Nothing
 
 
+space : Set.Set Char.KeyCode -> Bool
+space keys =
+    Set.member 32 keys
+
+
 -- SIGNALS
 
 
@@ -683,18 +704,49 @@ input : Game -> Signal Input
 input game =
     Signal.sampleOn delta <|
         Signal.map5 Input
-            Keyboard.space
             Keyboard.keysDown
             delta
             (Signal.map (\(w, h) -> (w-sidebarWidth-sidebarBorderWidth, h)) Window.dimensions)
             (every millisecond)
+            connectionStatus
 
 
--- Websocket 
+everConnected : Signal Bool
+everConnected =
+    Signal.foldp (||) False connected.signal
 
 
-socket : Task x SocketIO.Socket
-socket =
-    SocketIO.io "http://localhost:9000" SocketIO.defaultOptions
+connectionStatus : Signal String
+connectionStatus =
+    let f : (Bool, Bool) -> String
+        f tup = case tup of
+            (False, False) -> "Connecting..."
+            (False, True) -> "Disconnected."
+            (True, _) -> "Connected."
+    in Signal.map2 (\a b -> f (a,b)) connected.signal everConnected
 
 
+-- MAILBOXES
+
+
+connected : Signal.Mailbox Bool
+connected =
+    Signal.mailbox False
+
+
+received : Signal.Mailbox String
+received =
+    Signal.mailbox "null"
+
+
+-- WEBSOCKET
+
+
+port connection : Task x ()
+port connection =
+    socket `andThen` SocketIO.connected connected.address
+
+
+port responses : Task x ()
+port responses =
+    socket `andThen` SocketIO.on "pong" received.address
