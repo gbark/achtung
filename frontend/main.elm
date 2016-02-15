@@ -177,7 +177,7 @@ updateState {keys} {players, state} =
                 Start
 
         Play ->
-            if isEmpty <| filter (\p -> p.alive) players then
+            if filter .alive players |> isEmpty then
                 Roundover
 
             else
@@ -201,7 +201,10 @@ updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
             if state == Select then
                 case (playerSelect keys) of
                     Just n ->
-                        if n == 2 then
+                        if n == 1 then
+                            [player1]
+
+                        else if n == 2 then
                             [player1, player2]
 
                         else if n == 3 then
@@ -217,17 +220,31 @@ updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
                 players
 
         Play ->
-            if state == Start || state == Roundover then
-                map (initPlayer gamearea time) players
+            case state of
+                Select ->
+                    map (updatePlayer delta gamearea time players)
+                    (mapInputs players keys)
 
-            else
-                map (updatePlayer delta gamearea time players) <| mapInputs players keys
+                Start ->
+                    map (initPlayer gamearea time) players
+
+                Play ->
+                    map (updatePlayer delta gamearea time players)
+                    (mapInputs players keys)
+
+                Roundover ->
+                    -- Reset score when playing single player mode
+                    if length players == 1 then
+                        map resetScore players |> map (initPlayer gamearea time)
+
+                    else
+                        map (initPlayer gamearea time) players
 
         Roundover ->
             players
 
 
-initPlayer : (Int, Int) -> Time -> Player-> Player
+initPlayer : (Int, Int) -> Time -> Player -> Player
 initPlayer gamearea time player =
     let
         seed = (truncate (inMilliseconds time)) + player.id ^ 3
@@ -237,6 +254,11 @@ initPlayer gamearea time player =
                  , path = [Visible (randomPosition seed gamearea)]
                  , alive = True
         }
+
+
+resetScore : Player -> Player
+resetScore p =
+    { p | score = 0 }
 
 
 updatePlayer : Time -> (Int, Int) -> Time -> List Player -> Player -> Player
@@ -262,7 +284,8 @@ updatePlayer delta gamearea time players player =
                 hitWall position gamearea
 
             winner =
-                if length (filter (\p -> p.alive) players) < 2 then
+                if length players > 1
+                && length (filter .alive players) < 2 then
                     True
 
                 else
@@ -277,6 +300,10 @@ updatePlayer delta gamearea time players player =
                           , alive = False
                 }
 
+            -- Single player (survivor mode)
+            else if length players == 1 then
+                { player' | score = player'.score + 1 }
+
             else
                 player'
 
@@ -284,17 +311,17 @@ updatePlayer delta gamearea time players player =
 collisionPaths player players =
     let
         others =
-            filter (\p -> p.id /= player.id) players
+            filter (.id >> (/=) player.id) players
 
         otherPaths =
-            foldl (\p acc -> append p.path acc) [] others
+            foldl (.path >> flip append) [] others
 
         -- Drop 10 positions so we dont check collisions with ourselves
         myPath =
             drop 10 player.path
 
     in
-        filter (\p -> isVisible p) (concat [myPath, otherPaths])
+        filter isVisible (concat [myPath, otherPaths])
 
 
 move : Time -> Player -> Player
@@ -351,7 +378,7 @@ puncture path length =
             rest =
                 drop (length+1) path
 
-            punctured = map (\p -> let (x,y) = asXY p in Hidden (x,y)) toPuncture
+            punctured = map (asXY >> Hidden) toPuncture
 
         in
             concat [margin, punctured, rest]
@@ -493,10 +520,10 @@ renderPlayer player =
             filter isGroupOfVisibles coords
 
         positions =
-            map (\pts -> map asXY pts) visibleCoords
+            map (map asXY) visibleCoords
 
     in
-        map (\pts -> traced lineStyle (path pts)) positions
+        map (path >> traced lineStyle) positions
 
 
 sidebar game =
@@ -537,10 +564,17 @@ sidebar game =
 
 
 scoreboard game =
-    div [] [ h3 [] [(Html.text ("Round: " ++ toString game.round))]
+    div [] [ (if length game.players > 1 then
+                h3 [] [(Html.text ("Round: " ++ toString game.round))]
+              else
+                h3 [] [(Html.text ("Survivor mode :-O"))]
+           )
            , ol [ style [ ("textAlign", "left") ] ]
-                (map scoreboardPlayer (sortBy .score game.players |> reverse))
-           , p  [ style [ ("color", "grey") ] ] [(Html.text "Press space to start")]
+                (game.players
+                    |> sortBy .score
+                    |> reverse
+                    |> map scoreboardPlayer)
+           , p  [ style [ ("color", "grey") ] ] [(Html.text "Press <space> to start")]
            ]
 
 
@@ -552,13 +586,14 @@ scoreboardPlayer {keyDesc, id, score, color} =
                     ++ keyDesc
                     ++ ") -- "
                     ++ (toString score)
-                    ++ " wins")
+                    ++ " points")
        ]
 
 
 start =
     div [] [ ul [ style [ ("textAlign", "left"), ("color", "grey") ] ]
-                [ li [] [ (Html.text "Press <2> for two players") ]
+                [ li [] [ (Html.text "Press <1> for single player") ]
+                , li [] [ (Html.text "Press <2> for two players") ]
                 , li [] [ (Html.text "Press <3> for three players") ]
                 ]
            ]
@@ -667,7 +702,10 @@ toDirection keys player =
 
 playerSelect : Set.Set Char.KeyCode -> Maybe Int
 playerSelect keys =
-    if Set.member 50 keys then
+    if Set.member 49 keys then
+        Just 1
+
+    else if Set.member 50 keys then
         Just 2
 
     else if Set.member 51 keys then
