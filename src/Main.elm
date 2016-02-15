@@ -157,7 +157,7 @@ updateState {space, keys} {players, state} =
                 Start
 
         Play ->
-            if length (filter (\p -> p.alive) players) == 0 then
+            if length (filter .alive players) == 0 then
                 Roundover
 
             else
@@ -243,7 +243,7 @@ updatePlayer delta gamearea time players player =
                 hitWall position gamearea
 
             winner =
-                if length (filter (\p -> p.alive) players) < 2 then
+                if length (filter .alive players) < 2 then
                     True
 
                 else
@@ -265,17 +265,17 @@ updatePlayer delta gamearea time players player =
 collisionPaths player players =
     let
         others =
-            filter (\p -> p.id /= player.id) players
+            filter (.id >> (/=) player.id) players
 
         otherPaths =
-            foldl (\p acc -> append p.path acc) [] others
+            foldl (.path >> flip append) [] others
 
         -- Drop 10 positions so we dont check collisions with ourselves
         myPath =
             drop 10 player.path
 
     in
-        filter (\p -> isVisible p) (concat [myPath, otherPaths])
+        filter isVisible (concat [myPath, otherPaths])
 
 
 move : Time -> Player -> Player
@@ -332,7 +332,7 @@ puncture path length =
             rest =
                 drop (length+1) path
 
-            punctured = map (\p -> let (x,y) = asXY p in Hidden (x,y)) toPuncture
+            punctured = map (asXY >> Hidden) toPuncture
 
         in
             concat [margin, punctured, rest]
@@ -474,10 +474,10 @@ renderPlayer player =
             filter isGroupOfVisibles coords
 
         positions =
-            map (\pts -> map asXY pts) visibleCoords
+            map (map asXY) visibleCoords
 
     in
-        map (\pts -> traced lineStyle (path pts)) positions
+        map (path >> traced lineStyle) positions
 
 
 sidebar game =
