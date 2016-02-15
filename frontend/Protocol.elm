@@ -2,6 +2,7 @@ module Protocol where
 
 
 import SocketIO
+import Task exposing (Task)
 
 
 socket : Task x SocketIO.Socket
