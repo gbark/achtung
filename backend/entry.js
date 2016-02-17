@@ -4,4 +4,4 @@ require('babel-core/register')({
 });
 
 // Run actual code
-require('./Main');
+require('./main');
