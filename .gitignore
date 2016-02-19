@@ -6,3 +6,4 @@ repl-temp-*
 elm.js
 node_modules
 public/build
+jsconfig.json

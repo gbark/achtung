@@ -4,13 +4,13 @@ module Main where
 import Window
 import Keyboard
 import List exposing (..)
-import SocketIO
+-- import SocketIO
 import Task exposing (Task, andThen)
 import Html exposing (..)
 import Time exposing (..)
 
 
-import Protocol exposing (..)
+-- import Protocol exposing (..)
 import Shared exposing (..)
 import Model exposing (..)
 import Utils exposing (..)
@@ -102,9 +102,9 @@ received =
 -- WEBSOCKET
 
 
-port initial : Task x ()
-port initial =
-    socket `andThen` SocketIO.emit "pingo" "pingo"
+-- port initial : Task x ()
+-- port initial =
+--     socket `andThen` SocketIO.emit "pingo" "pingo"
 
 
 -- port connection : Task x ()
