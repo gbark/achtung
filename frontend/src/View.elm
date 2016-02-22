@@ -5,13 +5,14 @@ import List exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Graphics.Collage exposing (..)
-import Graphics.Element exposing (..)
 import Color exposing (..)
 
 
-import Model exposing (..)
-import Shared exposing (..)
+import Game exposing (..)
+import Player exposing (..)
 import Utils exposing (..)
+import Position exposing (..)
+import Consts
 
 
 view : Game -> Html
@@ -43,7 +44,7 @@ renderPlayer player =
             foldr toGroups [] player.path
 
         lineStyle =
-            { defaultLine | width = snakeWidth
+            { defaultLine | width = Consts.snakeWidth
                           , color = player.color
                           , cap = Round
             }
@@ -62,10 +63,10 @@ sidebar game =
     div [ style [ ("position", "absolute")
                 , ("right", "0")
                 , ("top", "0")
-                , ("width", (toString sidebarWidth) ++ "px")
+                , ("width", (toString Consts.sidebarWidth) ++ "px")
                 , ("height", "100%")
                 , ("backgroundColor", "black")
-                , ("borderLeft", (toString sidebarBorderWidth) ++ "px solid white")
+                , ("borderLeft", (toString Consts.sidebarBorderWidth) ++ "px solid white")
                 , ("color", "white")
                 , ("textAlign", "center")
                 , ("fontFamily", "monospace")
@@ -155,7 +156,7 @@ info =
 -- foldr toGroups [] [Visible (0,1), Visible (0,2), Hidden (0,3), Hidden (0,4), Visible (0,5)]
 -- ->
 -- [[Visible (0,1), Visible (0,2)], [Hidden (0,3) ,Hidden (0,4)], [Visible (0,5)]]
-toGroups : Model.Position (Float, Float) -> List (List (Model.Position (Float, Float))) -> List (List (Model.Position (Float, Float)))
+toGroups : Position (Float, Float) -> List (List (Position (Float, Float))) -> List (List (Position (Float, Float)))
 toGroups position acc =
     case acc of
         [] ->
@@ -183,7 +184,7 @@ colorToString c =
         ++ ")"
 
 
-isGroupOfVisibles : List (Model.Position (Float, Float)) -> Bool
+isGroupOfVisibles : List (Position (Float, Float)) -> Bool
 isGroupOfVisibles positions =
     case positions of
         [] -> False

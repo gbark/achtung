@@ -1,7 +1,8 @@
 module Online where
 
 
-import Model exposing (..)
+import Input exposing (Input)
+import Game exposing (..)
 
 
 update : Input -> Game -> Game

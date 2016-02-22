@@ -1,4 +1,4 @@
-module Shared where
+module Player where
 
 
 import Color
@@ -9,16 +9,30 @@ import List exposing (..)
 import Time exposing (..)
 
 
-import Model exposing (..)
 import Utils exposing (..)
+import Position exposing (..)
+import Consts
 
 
-maxAngleChange = 5
-speed = 125
-snakeWidth = 3
-sidebarWidth = 250
-sidebarBorderWidth = 5
+type alias Player =
+    { id: Int
+    , path: List (Position (Float, Float))
+    , angle: Float
+    , direction: Direction
+    , alive: Bool
+    , score: Int
+    , color: Color.Color
+    , leftKey: Char.KeyCode
+    , rightKey: Char.KeyCode
+    , keyDesc: String
+    }
 
+
+type Direction
+    = Left
+    | Right
+    | Straight
+    
 
 defaultPlayer : Player
 defaultPlayer =
@@ -114,8 +128,8 @@ move delta player =
 
         angle =
             case player.direction of
-                Left -> player.angle + maxAngleChange
-                Right -> player.angle + -maxAngleChange
+                Left -> player.angle + Consts.maxAngleChange
+                Right -> player.angle + -Consts.maxAngleChange
                 Straight -> player.angle
 
         vx =
@@ -125,10 +139,10 @@ move delta player =
             sin (angle * pi / 180)
 
         nextX =
-            x + vx * (delta * speed)
+            x + vx * (delta * Consts.speed)
 
         nextY =
-            y + vy * (delta * speed)
+            y + vy * (delta * Consts.speed)
 
         path' =
             puncture player.path <| randomHole <| truncate nextX
@@ -235,8 +249,8 @@ hitSnake position1 position2 =
             asXY position2
 
     in
-        near x1 snakeWidth x2
-        && near y1 snakeWidth y2
+        near x1 Consts.snakeWidth x2
+        && near y1 Consts.snakeWidth y2
 
 
 hitWall : Position (Float, Float) -> (Int, Int) -> Bool
@@ -281,22 +295,7 @@ toDirection keys player =
 
     else
         Straight
-
-
-playerSelect : Set.Set Char.KeyCode -> Maybe Int
-playerSelect keys =
-    if Set.member 49 keys then
-        Just 1
-
-    else if Set.member 50 keys then
-        Just 2
-
-    else if Set.member 51 keys then
-        Just 3
-
-    else
-        Nothing
-
+        
 
 space : Set.Set Char.KeyCode -> Bool
 space keys =

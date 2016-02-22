@@ -4,31 +4,34 @@ module Local where
 import Color
 import Char
 import Random
+import Set
 import List exposing (..)
 import Time exposing (..)
 
 
-import Model exposing (..)
-import Shared exposing (..)
+import Game exposing (..)
+import Player exposing (..)
+import Input exposing (Input)
+import Position exposing (..)
 
 
 player2 : Player
 player2 =
     { defaultPlayer | id = 2
-              , color = Color.rgb 229 49 39
-              , leftKey = 40
-              , rightKey = 39
-              , keyDesc = "UP,DN"
+                    , color = Color.rgb 229 49 39
+                    , leftKey = 40
+                    , rightKey = 39
+                    , keyDesc = "UP,DN"
     }
 
 
 player3 : Player
 player3 =
     { defaultPlayer | id = 3
-              , color = Color.rgb 25 100 183
-              , leftKey = (Char.toCode 'N')
-              , rightKey = (Char.toCode 'M')
-              , keyDesc = "N,M"
+                    , color = Color.rgb 25 100 183
+                    , leftKey = (Char.toCode 'N')
+                    , rightKey = (Char.toCode 'M')
+                    , keyDesc = "N,M"
     }
 
 
@@ -152,3 +155,18 @@ initPlayer gamearea time player =
                  , path = [Visible (randomPosition seed gamearea)]
                  , alive = True
         }
+        
+        
+playerSelect : Set.Set Char.KeyCode -> Maybe Int
+playerSelect keys =
+    if Set.member 49 keys then
+        Just 1
+
+    else if Set.member 50 keys then
+        Just 2
+
+    else if Set.member 51 keys then
+        Just 3
+
+    else
+        Nothing

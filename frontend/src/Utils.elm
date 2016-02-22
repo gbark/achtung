@@ -1,7 +1,7 @@
 module Utils where
 
 
-import Model exposing (..)
+import Position exposing (..)
 
 
 isVisible : Position (Float, Float) -> Bool
