@@ -1,5 +1,7 @@
 import Server from 'socket.io'
 
+import game from './game/core'
+
 const PORT = 9000
 
 export default function startServer(store) {
@@ -9,7 +11,7 @@ export default function startServer(store) {
     io.on('connection', (socket) => {
         console.log('-- socket.io: client connected. id: ', socket.client.id)
 
-        socket.emit('connected', { id: socket.client.id })
+        game.addPlayer(socket.client.id)
 
         socket.on('playerOutput', (data) => {
             console.log('-- socket.io: playerOutput', data)
@@ -18,6 +20,8 @@ export default function startServer(store) {
 
         socket.on('disconnect', () => {
             console.log('-- socket.io: client disconnected. id: ', socket.client.id)
+
+            game.removePlayer(socket.client.id)
         })
     })
 }

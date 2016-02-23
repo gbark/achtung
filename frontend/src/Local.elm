@@ -169,3 +169,8 @@ playerSelect keys =
 
     else
         Nothing
+
+
+resetScore : Player -> Player
+resetScore p =
+    { p | score = 0 }

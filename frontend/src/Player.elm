@@ -49,11 +49,6 @@ defaultPlayer =
     }
 
 
-resetScore : Player -> Player
-resetScore p =
-    { p | score = 0 }
-
-
 updatePlayer : Time -> (Int, Int) -> Time -> List Player -> Player -> Player
 updatePlayer delta gamearea time players player =
     if not player.alive then

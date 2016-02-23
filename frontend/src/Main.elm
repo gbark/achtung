@@ -28,12 +28,12 @@ update : Input -> Game -> Game
 update input game =
     case game.mode of 
         Undecided -> 
-            if Set.member 49 input.keys then
-                -- Numerical 1 pressed
+            if Set.member 79 input.keys then
+                -- Key 'O' pressed
                 { game | mode = Online }
             
-            else if Set.member 50 input.keys then
-                -- Numerical 2 pressed
+            else if Set.member 76 input.keys then
+                -- Key 'L' pressed
                 { game | mode = Local }
         
             else
