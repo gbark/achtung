@@ -10,7 +10,7 @@ type State = Select
            | Roundover
 
 
-type Mode = Local | Online
+type Mode = Undecided | Local | Online
 
 
 type alias Game =
@@ -19,7 +19,6 @@ type alias Game =
     , mode: Mode
     , gamearea: (Int, Int)
     , round: Int
-    , socketStatus: String
     }
     
 
@@ -27,8 +26,7 @@ defaultGame : Game
 defaultGame =
     { players = []
     , state = Select
-    , mode = Local
+    , mode = Undecided
     , gamearea = (0, 0)
     , round = 0
-    , socketStatus = "Unknown"
     }

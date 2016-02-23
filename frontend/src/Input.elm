@@ -8,7 +8,7 @@ import Keyboard
 import Window
 
 
-import Consts
+import Config
 import Game exposing (Game)
 
 
@@ -17,49 +17,31 @@ type alias Input =
     , delta: Time.Time
     , gamearea: (Int, Int)
     , time: Time.Time
-    , socketStatus: String
     }
     
 
 delta : Signal Time
 delta =
     Signal.map inSeconds (fps 35)
+    
+
+time : Signal Time
+time =
+    (every millisecond)
+    
+
+keyboard : Signal (Set.Set Char.KeyCode)
+keyboard =
+    Keyboard.keysDown
 
 
-input : Game -> Signal Input
-input game =
-    Signal.sampleOn delta <|
-        Signal.map5 Input
-            Keyboard.keysDown
-            delta
-            (Signal.map (\(w, h) -> (w-Consts.sidebarWidth-Consts.sidebarBorderWidth, h)) Window.dimensions)
-            (every millisecond)
-            received.signal
+gamearea : Signal (Int, Int)
+gamearea =
+    (Signal.map (\(w, h) -> (w-Config.sidebarWidth-Config.sidebarBorderWidth, h)) Window.dimensions)
 
 
-everConnected : Signal Bool
-everConnected =
-    Signal.foldp (||) False connected.signal
-
-
-connectionStatus : Signal String
-connectionStatus =
-    let f : (Bool, Bool) -> String
-        f tup = case tup of
-            (False, False) -> "Connecting..."
-            (False, True) -> "Disconnected."
-            (True, _) -> "Connected."
-    in Signal.map2 (\a b -> f (a,b)) connected.signal everConnected
-
-
--- MAILBOXES
-
-
-connected : Signal.Mailbox Bool
-connected =
-    Signal.mailbox False
-
-
-received : Signal.Mailbox String
-received =
-    Signal.mailbox "null"
+input : Signal Input
+input =
+    Signal.map4 Input keyboard delta gamearea time
+        |> Signal.sampleOn delta
+        |> Signal.dropRepeats

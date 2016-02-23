@@ -1,4 +1,4 @@
-module Consts where
+module Config where
 
 
 maxAngleChange = 5

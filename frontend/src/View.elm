@@ -12,7 +12,7 @@ import Game exposing (..)
 import Player exposing (..)
 import Utils exposing (..)
 import Position exposing (..)
-import Consts
+import Config
 
 
 view : Game -> Html
@@ -44,7 +44,7 @@ renderPlayer player =
             foldr toGroups [] player.path
 
         lineStyle =
-            { defaultLine | width = Consts.snakeWidth
+            { defaultLine | width = Config.snakeWidth
                           , color = player.color
                           , cap = Round
             }
@@ -63,10 +63,10 @@ sidebar game =
     div [ style [ ("position", "absolute")
                 , ("right", "0")
                 , ("top", "0")
-                , ("width", (toString Consts.sidebarWidth) ++ "px")
+                , ("width", (toString Config.sidebarWidth) ++ "px")
                 , ("height", "100%")
                 , ("backgroundColor", "black")
-                , ("borderLeft", (toString Consts.sidebarBorderWidth) ++ "px solid white")
+                , ("borderLeft", (toString Config.sidebarBorderWidth) ++ "px solid white")
                 , ("color", "white")
                 , ("textAlign", "center")
                 , ("fontFamily", "monospace")
@@ -92,7 +92,6 @@ sidebar game =
                 (scoreboard game)
           )
         , info
-        , (Html.text game.socketStatus)
         ]
 
 

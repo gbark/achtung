@@ -20,5 +20,8 @@
   "scripts": {
     "start": "node ./dev-server.js",
     "build": "webpack -p"
+  },
+  "dependencies": {
+    "socket.io-client": "^1.4.5"
   }
 }

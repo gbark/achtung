@@ -11,7 +11,7 @@ import Time exposing (..)
 
 import Utils exposing (..)
 import Position exposing (..)
-import Consts
+import Config
 
 
 type alias Player =
@@ -128,8 +128,8 @@ move delta player =
 
         angle =
             case player.direction of
-                Left -> player.angle + Consts.maxAngleChange
-                Right -> player.angle + -Consts.maxAngleChange
+                Left -> player.angle + Config.maxAngleChange
+                Right -> player.angle + -Config.maxAngleChange
                 Straight -> player.angle
 
         vx =
@@ -139,10 +139,10 @@ move delta player =
             sin (angle * pi / 180)
 
         nextX =
-            x + vx * (delta * Consts.speed)
+            x + vx * (delta * Config.speed)
 
         nextY =
-            y + vy * (delta * Consts.speed)
+            y + vy * (delta * Config.speed)
 
         path' =
             puncture player.path <| randomHole <| truncate nextX
@@ -249,8 +249,8 @@ hitSnake position1 position2 =
             asXY position2
 
     in
-        near x1 Consts.snakeWidth x2
-        && near y1 Consts.snakeWidth y2
+        near x1 Config.snakeWidth x2
+        && near y1 Config.snakeWidth y2
 
 
 hitWall : Position (Float, Float) -> (Int, Int) -> Bool

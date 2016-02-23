@@ -6,7 +6,7 @@ import Game exposing (..)
 
 
 update : Input -> Game -> Game
-update ({keys, delta, gamearea, time, socketStatus} as input) ({players, state, round} as game) =
+update ({keys, delta, gamearea, time} as input) ({players, state, round} as game) =
     let
         state' =
             state
@@ -29,5 +29,4 @@ update ({keys, delta, gamearea, time, socketStatus} as input) ({players, state, 
                , gamearea = gamearea
                , state = state'
                , round = round'
-               , socketStatus = socketStatus
         }
