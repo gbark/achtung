@@ -98,18 +98,18 @@ updatePlayer delta gamearea time players player =
 
 collisionPaths player players =
     let
-        others =
+        opponents =
             filter (.id >> (/=) player.id) players
 
-        otherPaths =
-            foldl (.path >> flip append) [] others
+        opponentsPaths =
+            foldl (.path >> flip append) [] opponents
 
         -- Drop 10 positions so we dont check collisions with ourselves
         myPath =
             drop 10 player.path
 
     in
-        filter isVisible (concat [myPath, otherPaths])
+        filter isVisible (concat [myPath, opponentsPaths])
 
 
 move : Time -> Player -> Player
@@ -148,14 +148,14 @@ move delta player =
         }
 
 
-puncture path length =
-    if length < 1 then
+puncture path width =
+    if width < 1 then
         path
 
     else
         let
             withMargin =
-                take (length+1) path
+                take (width+1) path
 
             margin =
                 take 1 withMargin
@@ -164,7 +164,7 @@ puncture path length =
                 drop 1 withMargin
 
             rest =
-                drop (length+1) path
+                drop (width+1) path
 
             punctured = map (asXY >> Hidden) toPuncture
 

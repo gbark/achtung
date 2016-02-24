@@ -1,21 +1,17 @@
-import { INITIAL_STATE
-       , addPlayer
-       , removePlayer
-       , step 
-       } from './core'
+import {combineReducers} from 'redux-immutable'
 
-export default function reducer(state = INITIAL_STATE, action) {
-    switch(action.type) {
-        case 'STEP':
-            return step(state, action.input)
-            
-        case 'ADD_PLAYER':
-            return addPlayer(state, action.id)
-            
-        case 'REMOVE_PLAYER':
-            return removePlayer(state, action.id)
-            
-    }
 
-    return state
-}
+import players from './modules/players'
+import state from './modules/state'
+import mode from './modules/mode'
+import gamearea from './modules/gamearea'
+import round from './modules/round'
+
+
+export default combineReducers({
+    players,
+    state,
+    mode,
+    gamearea,
+    round
+})

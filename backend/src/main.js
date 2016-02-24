@@ -1,5 +1,6 @@
 import startServer from './server';
+import makeStore from './store';
 
-// Here we'll hook it up with redux
+const store = makeStore()
 
-startServer();
+startServer(store);
