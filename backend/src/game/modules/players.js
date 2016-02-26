@@ -7,6 +7,7 @@ import {List, Map, fromJS, Stack} from 'immutable'
 const UPDATE = 'achtung/players/UPDATE'
 const ADD_PLAYER = 'achtung/players/ADD_PLAYER'
 const REMOVE_PLAYER = 'achtung/players/REMOVE_PLAYER'
+const SET_DIRECTION = 'achtung/players/SET_DIRECTION'
 
 
 // CONSTANTS AND DEFAULTS
@@ -18,7 +19,6 @@ const RIGHT = 'Right'
 
 
 const DEFAULT_PLAYER = Map({
-	id: null,
 	path: Stack(),
 	angle: null,
 	direction: STRAIGHT,
@@ -30,9 +30,10 @@ const DEFAULT_PLAYER = Map({
 const MAX_ANGLE_CHANGE = 5
 const SPEED = 125
 const SNAKE_WIDTH = 3
+const SAFETY_MARGIN = 200
 
 
-const INITIAL_STATE = List()
+const INITIAL_STATE = Map()
 
 
 // REDUCER
@@ -40,19 +41,23 @@ const INITIAL_STATE = List()
 
 export default function reducer(players = INITIAL_STATE, action) {
     switch(action.type) {
-        case UPDATE:
-            let nextPlayers = players.map(p => {
-                updatePlayer(action.delta, action.gamearea, action.time, players, p)
+        case UPDATE:            
+            return players.map((v, k) => {
+                console.log('##### invoking updatePlayer', v)
+                if (v) {
+                    updatePlayer(action.delta, action.gamearea, players, v)
+                }
+                
             })
-            return nextPlayers
             
         case ADD_PLAYER:
-            const newPlayer = DEFAULT_PLAYER.set('id', action.id)
-			return players.push(newPlayer)
+			return players.set(action.id, DEFAULT_PLAYER)
             
         case REMOVE_PLAYER:
-            const idx = getPlayerIndex(players, action.id)
-			return players.delete(idx)
+			return players.delete(action.id)
+            
+        case SET_DIRECTION:
+            return players.setIn([action.id, 'direction'], action.direction)
             
     }
 
@@ -63,12 +68,11 @@ export default function reducer(players = INITIAL_STATE, action) {
 // ACTION CREATORS
 
 
-export function update(delta, gamearea, time) {
+export function update(delta, gamearea) {
 	return {
         type: UPDATE,
         delta,
-        gamearea,
-        time
+        gamearea
     }
 }
 
@@ -89,70 +93,91 @@ export function removePlayer(state, id) {
 }
 
 
-// PRIVATE
-
-
-function getPlayerIndex(players, id) {
-	return players.findLastIndex((p) => {
-		return p.id === id
-	})
+export function setDirection(direction, id) {
+	return {
+        type: SET_DIRECTION,
+        direction,
+        id
+    }
 }
 
 
-function updatePlayer(delta, gamearea, time, players, player) {
+// PRIVATE
+
+
+function updatePlayer(delta, gamearea, players, player) {
+    console.log('updatePlayer invoked')
+    
     if (!player.get('alive')) {
         return player
     }
+          
     
-    let nextPlayer = move(delta, player),
+    if (player.position === undefined) {
+        return initPlayer(gamearea, player)
+    }
     
-        position = nextPlayer.path.first(),
+    
+    const nextPlayer = move(delta, player),
+    
+          position = nextPlayer.path.get()
         
-        paths = collisionPaths(nextPlayer, players),
+        
+    const paths = collisionPaths(nextPlayer, players),
     
-        hs = paths.some(path => {
-            return hitSnake(path, position)
-        })
+          hs = paths.some(path => {
+              return hitSnake(path, position)
+          }),
+          
+          hw = hitWall(position, gamearea),
+          
+          winner = players.filter(p => { return p.alive }).length < 2
+          
+    
+    if (hs || hw) {
+        return nextPlayer.set('alive', false)
+    } else if (winner) {
+        return nextPlayer.set('alive', false)
+                         .set('score', player.get('score') + 1)
+    }
+    
     
     return nextPlayer
 }
 
 
 function move(delta, player) {
-    const position = player.get('path').first(); // position = { x = -2, y = 5, visible: true }
-        
-        
     let angle = player.angle
     if (player.direction == LEFT) {
         angle = player.angle + MAX_ANGLE_CHANGE
-        
     } else if (player.direction == RIGHT) {
         angle = player.angle + -MAX_ANGLE_CHANGE
-        
     }
     
     
     const vx = Math.cos(angle * Math.PI / 180),
-          vy = Math.sin(angle * Math.PI / 180)
-          
-          
-    const nextX = position.x + vx * (delta * SPEED),
-          nextY = position.y + vy * (delta * SPEED)
-          
+          vy = Math.sin(angle * Math.PI / 180),
     
-    const holes = randomHole()
-    const puncturedPath = puncture(player.path, holes)
-    const path = puncturedPath.add({ x: nextX, y: nextY, visible: true })
+          position = player.get('path').first(), // position = { x = -2, y = 5, visible: true }
+          
+          nextX = position.x + vx * (delta * SPEED),
+          nextY = position.y + vy * (delta * SPEED),
     
+          holes = randomHole(),
+          
+          puncturedPath = puncture(player.path, holes),
+          
+          path = puncturedPath.unshift({ x: nextX, y: nextY, visible: true })
+
     
     return player.set('angle', angle)
-                 .set('path', path) 
+                 .set('path', path)
 }
 
 
 function randomHole() {
     // Create hole 1 out of 150 times
-    const hole = (Math.floor(Math.random() * 150) + 1) === 1 ? true : false
+    const hole = (Math.floor(Math.random() * 150) + 1) === 1
     
     if (hole) {
         // Hole is 2 to 5 wide
@@ -168,37 +193,39 @@ function puncture(path, width) {
         return path
     }
     
-    const withMargin = path.take(width + 1),
+    const marginWidth = 1,
+        
+          withMargin = path.take(width + marginWidth),
     
-        margin = withMargin.take(1),
+          margin = withMargin.take(marginWidth),
         
-        toPuncture = withMargin.skip(1),
+          toPuncture = withMargin.skip(marginWidth),
         
-        rest = path.skip(width+1),
+          rest = path.skip(width+marginWidth),
         
-        punctured = toPuncture.map(p => {
-            return {
-                // Use ...p
-                x: p.x,
-                y: p.y,
-                visible: false
-            }
-        })
+          punctured = toPuncture.map(p => {
+              return {
+                  // Use ...p
+                  x: p.x,
+                  y: p.y,
+                  visible: false
+              }
+          })
         
-    return margin.concat([punctured, rest])
+    return margin.concat(punctured, rest)
 }
 
 
 function collisionPaths(player, players) {
-    let opponents = players.filter(p => { return p.id !== player.id }),
+    const opponents = players.filter(p => { return p.id !== player.id }),
     
-        opponentsPaths = opponents.reduce((o, acc) => {
-            acc.push(o.get('path'))
-        }, []),
+          opponentsPaths = opponents.reduce((o, acc) => {
+              acc.push(o.get('path'))
+          }, []),
         
-        myPath = player.get('path').skip(10),
+          myPath = player.get('path').skip(10),
         
-        combinedPaths = myPath.concat([opponentsPaths])
+          combinedPaths = myPath.concat(opponentsPaths)
         
     return combinedPaths.filter(p => {
         return p.visible === true
@@ -206,20 +233,65 @@ function collisionPaths(player, players) {
 }
 
 
-function hitSnake(position1, position2) {
-    
+function near(n, c, m) {
+    return m >= n-c && m <= n+c
 }
 
 
+function hitSnake(position1, position2) {
+    return near(position1.x, SNAKE_WIDTH, position2.x) && 
+           near(position1.y, SNAKE_WIDTH, position2.y)
+}
 
-// near
 
-// hitSnake
+function hitWall(position, gamearea) {
+    if (!position.visible) {
+        return false
+    }
+    
+    const width = gamearea[0],
+          height = gamearea[1]
+    
+    if (position.x >= (width / 2)) {
+        return true
+    } else if (position.x <= -(width / 2)) {
+        return true
+    } else if (position.y >= (height / 2)) {
+        return true
+    } else if (position.y <= -(height / 2)) {
+        return true
+    }
+    
+    return false
+}
 
-// hitWall
 
-// initplayer
+function initPlayer(gamearea, player) {
+    const angle = randomAngle(),
+          path = Stack().push(randomPosition(gamearea))
+          
+    
+    return player.set('angle', angle)
+                 .set('path', path)
+                 .set('alive', true)
+}
 
-// randomAngle
 
-// randomPosition
+function randomAngle() {
+    return Math.floor(Math.random() * 360) + 0
+}
+
+
+function randomPosition(gamearea) {
+    const width = gamearea[0] - SAFETY_MARGIN,
+          height = gamearea[1] - SAFETY_MARGIN,
+          x = Math.floor(Math.random() * width/2) + -(width/2),
+          y = Math.floor(Math.random() * height/2) + -(height/2)
+          
+          
+    return {
+        visible: true,
+        x,
+        y
+    }
+}

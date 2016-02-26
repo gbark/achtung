@@ -3,7 +3,7 @@ import socket from 'socket.io-client'
 
 
 const game = Elm.fullscreen(Elm.Main, {
-	// serverInput: null
+	serverInput: null
 })
 
 
@@ -29,9 +29,11 @@ game.ports.onlineGame.subscribe(() => {
 	
 	ws = socket('http://localhost:9000')
 	
-	ws.on('event', (event) => {
-		const data = JSON.parse(event.data)
-		game.ports.serverInput.send(data)
+	ws.on('gameState', (data) => {
+		debugger
+		console.log('gameState', data)
+		// const data = JSON.parse(event.data)
+		// game.ports.serverInput.send(data)
 	})
 	
 })

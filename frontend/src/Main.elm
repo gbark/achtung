@@ -6,7 +6,7 @@ import Set exposing (Set)
 
 
 import View exposing (view)
-import Input exposing (Input, input)
+import Input exposing (..)
 import Game exposing (..)
 import Online
 import Local
@@ -45,6 +45,16 @@ update input game =
         Online ->
             Online.update input game    
         
+
+input : Signal Input
+input =
+    Signal.map5 Input keyboard delta gamearea time serverInput
+        |> Signal.sampleOn delta
+        |> Signal.dropRepeats
+        
+
+-- Ports
+        
         
 port playerOutput : Signal PlayerOutput
 port playerOutput =
@@ -57,3 +67,5 @@ port onlineGame =
     Signal.map (.mode >> (==) Game.Online) gameState
         |> Signal.dropRepeats
         
+             
+port serverInput : Signal (Maybe ServerInput)

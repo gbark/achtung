@@ -26,6 +26,22 @@ type alias Player =
     , rightKey: Char.KeyCode
     , keyDesc: String
     }
+    
+    
+type alias PositionAsRecord = 
+    { x: Float
+    , y: Float
+    , visible: Bool
+    }
+
+
+type alias PlayerLight =
+    { path: List PositionAsRecord
+    , angle: Float
+    , direction: String
+    , alive: Bool
+    , score: Int
+    }
 
 
 type Direction

@@ -29,7 +29,6 @@ export default function reducer(state = INITIAL_STATE, action) {
                 case SELECT: 
                     if (action.players.count() >= PLAYERS_REQUIRED) {
                         return START
-                        
                     } else {
                         return SELECT
                     }

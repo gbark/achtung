@@ -9,7 +9,8 @@ import Window
 
 
 import Config
-import Game exposing (Game)
+import Game exposing (Game, State)
+import Player exposing (PlayerLight)
 
 
 type alias Input =
@@ -17,6 +18,14 @@ type alias Input =
     , delta: Time.Time
     , gamearea: (Int, Int)
     , time: Time.Time
+    , serverInput: Maybe ServerInput
+    }
+    
+    
+type alias ServerInput =
+    { players: List PlayerLight
+    , round: Int
+    , state: String
     }
     
 
@@ -38,10 +47,4 @@ keyboard =
 gamearea : Signal (Int, Int)
 gamearea =
     (Signal.map (\(w, h) -> (w-Config.sidebarWidth-Config.sidebarBorderWidth, h)) Window.dimensions)
-
-
-input : Signal Input
-input =
-    Signal.map4 Input keyboard delta gamearea time
-        |> Signal.sampleOn delta
-        |> Signal.dropRepeats
+    
