@@ -1,24 +1,20 @@
 import {List, Map, fromJS, Stack} from 'immutable'
 
-
-// ACTIONS
-
-
-const UPDATE = 'achtung/players/UPDATE'
-const ADD_PLAYER = 'achtung/players/ADD_PLAYER'
-const REMOVE_PLAYER = 'achtung/players/REMOVE_PLAYER'
-const SET_DIRECTION = 'achtung/players/SET_DIRECTION'
-
-
-// CONSTANTS AND DEFAULTS
+const INITIAL_STATE = Map()
+const PLAYERS_REQUIRED = 2
 
 
 const STRAIGHT = 'Straight'
 const LEFT = 'Left'
 const RIGHT = 'Right'
 
+const MAX_ANGLE_CHANGE = 5
+const SPEED = 125
+const SNAKE_WIDTH = 3
+const SAFETY_MARGIN = 0
 
-const DEFAULT_PLAYER = Map({
+
+export const DEFAULT_PLAYER = Map({
 	path: Stack(),
 	angle: null,
 	direction: STRAIGHT,
@@ -27,100 +23,119 @@ const DEFAULT_PLAYER = Map({
 })
 
 
-const MAX_ANGLE_CHANGE = 5
-const SPEED = 125
-const SNAKE_WIDTH = 3
-const SAFETY_MARGIN = 200
+export function update(delta, gamearea, game = Map()) {
+	const nextState = updateState(game.get('players'), game.get('state')),
+	
+		  nextPlayers = updatePlayers(delta, gamearea, game.get('state'), nextState, game.get('players')),
+		  
+		  nextRound = updateRound(game.get('state'), nextState, game.get('round'))	
+	
+	
+	return game.set('state', nextState)
+			   .set('players', nextPlayers)
+			   .set('round', nextRound)
+}
 
 
-const INITIAL_STATE = Map()
+export const STATE_WAITING_PLAYERS = 'WaitingPlayers' 
+export const STATE_PLAY = 'Play'
+export const STATE_ROUNDOVER = 'Roundover'
 
 
-// REDUCER
+function updateState(players, state = STATE_WAITING_PLAYERS) {
+	
+	switch(state) {
+        case STATE_WAITING_PLAYERS:
+			if (players && players.count() >= PLAYERS_REQUIRED) {
+                console.log('Game on!!')
+				return STATE_PLAY
+			}
+            
+            console.log('Waiting for ' + PLAYERS_REQUIRED + ' players')
+			return state
+			
+        case STATE_PLAY:
+			const alive = players.filter(p => {
+				return p.alive === true
+			})
+			if (alive.count() < 2) {
+                console.log('Round over!!')
+				return STATE_ROUNDOVER
+			}
+			return state
+			
+        case STATE_ROUNDOVER:
+			// Set to PLAY straight away
+			// MAY implement a short wait period
+			// in between rounds
+            console.log('Starting new round!')
+			return STATE_PLAY
+		
+	}
+	
+}
 
 
-export default function reducer(players = INITIAL_STATE, action) {
-    switch(action.type) {
-        case UPDATE:            
-            return players.map((v, k) => {
-                console.log('##### invoking updatePlayer', v)
-                if (v) {
-                    updatePlayer(action.delta, action.gamearea, players, v)
-                }
+function updatePlayers(delta, gamearea, state, nextState, players = Map()) {
+	
+	switch(nextState) {
+        case STATE_WAITING_PLAYERS:
+			return players
+			
+        case STATE_PLAY:
+            if (state === STATE_PLAY) {
                 
-            })
+                return players.map((player) => {
+                    return updatePlayer(delta, gamearea, players, player)
+                })
+                
+            } else if (state === STATE_ROUNDOVER) {
+                
+                return players.map((player) => {
+                    return initPlayer(gamearea, player)
+                })
+                
+            } else {
+                return players
+            }
             
-        case ADD_PLAYER:
-			return players.set(action.id, DEFAULT_PLAYER)
-            
-        case REMOVE_PLAYER:
-			return players.delete(action.id)
-            
-        case SET_DIRECTION:
-            return players.setIn([action.id, 'direction'], action.direction)
-            
-    }
-
-    return players
+			
+			
+        case STATE_ROUNDOVER:
+			return players
+		
+	}
+	
+	return players
 }
 
 
-// ACTION CREATORS
-
-
-export function update(delta, gamearea) {
-	return {
-        type: UPDATE,
-        delta,
-        gamearea
+function updateRound(state, nextState, round = 1) {
+    
+    if (state === STATE_PLAY && nextState === STATE_ROUNDOVER) {
+        return round + 1
     }
+    
+    return round
+    
 }
 
 
-export function addPlayer(id) {
-	return {
-        type: ADD_PLAYER,
-        id
-    }
-}
 
-
-export function removePlayer(state, id) {
-	return {
-        type: REMOVE_PLAYER,
-        id
-    }
-}
-
-
-export function setDirection(direction, id) {
-	return {
-        type: SET_DIRECTION,
-        direction,
-        id
-    }
-}
-
-
-// PRIVATE
 
 
 function updatePlayer(delta, gamearea, players, player) {
-    console.log('updatePlayer invoked')
-    
     if (!player.get('alive')) {
         return player
     }
           
-    
-    if (player.position === undefined) {
+    if (player.get('path').first() === undefined) {
         return initPlayer(gamearea, player)
     }
     
-    
     const nextPlayer = move(delta, player),
     
-          position = nextPlayer.path.get()
+          position = nextPlayer.get('path').first()
         
         
     const paths = collisionPaths(nextPlayer, players),
@@ -131,12 +146,19 @@ function updatePlayer(delta, gamearea, players, player) {
           
           hw = hitWall(position, gamearea),
           
-          winner = players.filter(p => { return p.alive }).length < 2
+          winner = players.filter(p => { return p.alive }).count() < 2
           
     
-    if (hs || hw) {
+    if (hs) {
+        console.log('hs')
         return nextPlayer.set('alive', false)
+        
+    } else if (hw) {
+        console.log('hw')
+        return nextPlayer.set('alive', false)
+        
     } else if (winner) {
+        console.log('winner')
         return nextPlayer.set('alive', false)
                          .set('score', player.get('score') + 1)
     }
@@ -147,13 +169,13 @@ function updatePlayer(delta, gamearea, players, player) {
 
 
 function move(delta, player) {
-    let angle = player.angle
-    if (player.direction == LEFT) {
-        angle = player.angle + MAX_ANGLE_CHANGE
-    } else if (player.direction == RIGHT) {
-        angle = player.angle + -MAX_ANGLE_CHANGE
+    const direction = player.get('direction')
+    let angle = player.get('angle')
+    if (direction == LEFT) {
+        angle = angle + MAX_ANGLE_CHANGE
+    } else if (direction == RIGHT) {
+        angle = angle + -MAX_ANGLE_CHANGE
     }
-    
     
     const vx = Math.cos(angle * Math.PI / 180),
           vy = Math.sin(angle * Math.PI / 180),
@@ -165,7 +187,7 @@ function move(delta, player) {
     
           holes = randomHole(),
           
-          puncturedPath = puncture(player.path, holes),
+          puncturedPath = puncture(player.get('path'), holes),
           
           path = puncturedPath.unshift({ x: nextX, y: nextY, visible: true })
 
@@ -278,7 +300,9 @@ function initPlayer(gamearea, player) {
 
 
 function randomAngle() {
-    return Math.floor(Math.random() * 360) + 0
+    const angle = Math.floor(Math.random() * 360) + 0
+    // console.log('randomAngle : ' + angle)
+    return angle
 }
 
 
@@ -287,6 +311,8 @@ function randomPosition(gamearea) {
           height = gamearea[1] - SAFETY_MARGIN,
           x = Math.floor(Math.random() * width/2) + -(width/2),
           y = Math.floor(Math.random() * height/2) + -(height/2)
+          
+    // console.log('randomPosition x: ' + x + ' y: ' + y)
           
           
     return {

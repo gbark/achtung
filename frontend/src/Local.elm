@@ -38,6 +38,7 @@ player3 =
 update : Input -> Game -> Game
 update ({keys, delta, gamearea, time} as input) ({players, state, round} as game) =
     let
+        log = Debug.log "dt" delta 
         state' =
             updateState input game
 
