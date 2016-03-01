@@ -56,7 +56,7 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
 			
         case STATE_PLAY:
 			const alive = players.filter(p => {
-				return p.alive === true
+				return p.get('alive') === true
 			})
 			if (alive.count() < 2) {
                 console.log('Round over!!')
@@ -85,8 +85,9 @@ function updatePlayers(delta, gamearea, state, nextState, players = Map()) {
         case STATE_PLAY:
             if (state === STATE_PLAY) {
                 
-                return players.map((player) => {
-                    return updatePlayer(delta, gamearea, players, player)
+                return players.map((player, id) => {
+                    const opponents = players.delete(id)
+                    return updatePlayer(delta, gamearea, opponents, player)
                 })
                 
             } else if (state === STATE_ROUNDOVER) {
@@ -124,7 +125,7 @@ function updateRound(state, nextState, round = 1) {
 
 
 
-function updatePlayer(delta, gamearea, players, player) {
+function updatePlayer(delta, gamearea, opponents, player) {
     if (!player.get('alive')) {
         return player
     }
@@ -136,9 +137,11 @@ function updatePlayer(delta, gamearea, players, player) {
     const nextPlayer = move(delta, player),
     
           position = nextPlayer.get('path').first()
+          
+    console.log('next position', position)
         
         
-    const paths = collisionPaths(nextPlayer, players),
+    const paths = collisionPaths(nextPlayer, opponents),
     
           hs = paths.some(path => {
               return hitSnake(path, position)
@@ -146,7 +149,7 @@ function updatePlayer(delta, gamearea, players, player) {
           
           hw = hitWall(position, gamearea),
           
-          winner = players.filter(p => { return p.alive }).count() < 2
+          winner = opponents.filter(p => { return p.get('alive') === true }).count() < 1
           
     
     if (hs) {
@@ -238,17 +241,15 @@ function puncture(path, width) {
 }
 
 
-function collisionPaths(player, players) {
-    const opponents = players.filter(p => { return p.id !== player.id }),
-    
-          opponentsPaths = opponents.reduce((o, acc) => {
-              acc.push(o.get('path'))
-          }, []),
+function collisionPaths(player, opponents) {
+    const opponentsPaths = opponents.reduce((acc, o) => {
+              return acc.push(o.get('path'))
+          }, Stack()),
         
           myPath = player.get('path').skip(10),
         
-          combinedPaths = myPath.concat(opponentsPaths)
-        
+          combinedPaths = myPath.concat(opponentsPaths).flatten()
+          
     return combinedPaths.filter(p => {
         return p.visible === true
     })
@@ -301,7 +302,6 @@ function initPlayer(gamearea, player) {
 
 function randomAngle() {
     const angle = Math.floor(Math.random() * 360) + 0
-    // console.log('randomAngle : ' + angle)
     return angle
 }
 
@@ -311,9 +311,7 @@ function randomPosition(gamearea) {
           height = gamearea[1] - SAFETY_MARGIN,
           x = Math.floor(Math.random() * width/2) + -(width/2),
           y = Math.floor(Math.random() * height/2) + -(height/2)
-          
-    // console.log('randomPosition x: ' + x + ' y: ' + y)
-          
+                    
           
     return {
         visible: true,
