@@ -8,6 +8,7 @@ type State = Select
            | Start
            | Play
            | Roundover
+           | WaitingPlayers
 
 
 type Mode = Undecided | Local | Online
@@ -30,3 +31,4 @@ defaultGame =
     , gamearea = (0, 0)
     , round = 0
     }
+    

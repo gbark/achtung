@@ -14,14 +14,13 @@ export default function startServer(store) {
     io.on('connection', (socket) => {
         const id = socket.client.id
         console.log('-- socket.io: client connected. id: ', id)
+        
+        socket.emit('playerId', socket.client.id)
 
         store.dispatch(addPlayer(id), store.getState().get('state'))
 
         socket.on('playerOutput', (data) => {
             store.dispatch(setDirection(data.direction, id, store.getState().get('state')))
-            // console.log('-- socket.io: playerOutput', data.direction)
-            // add incoming playerOutput to store 
-            // for later processing in game loop 
         })
 
         socket.on('disconnect', () => {

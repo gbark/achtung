@@ -24,11 +24,32 @@ let prevState = store.getState()
 function serverUpdate() {
 	const newState = store.getState()
 	if (!newState.equals(prevState)) {
-		io.emit('gameState', newState.toJS())
+		io.emit('gameState', makeOutput(newState))
 		prevState = newState
 	}
 }
 
 
-setInterval(physicsUpdate, 15) // On the client we run at 16ms/60hz
+function makeOutput(state) {
+	let i = 1
+	const players = state.get('players').map((v, k) => {
+		return v
+			.set('id', i++)
+			.set('color', 'foo')
+			.set('leftKey', 'foo')
+			.set('rightKey', 'foo')
+			.set('keyDesc', 'foo')
+		// return v.set('id', k)
+	}).toArray()
+	
+	return state
+			.set('players', players)
+			.set('mode', 'Online')
+			.set('gamearea', [500, 500])
+			.toJS()
+	
+}
+
+
+setInterval(physicsUpdate, 15)
 setInterval(serverUpdate, 45)

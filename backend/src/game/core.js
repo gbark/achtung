@@ -16,7 +16,7 @@ const SAFETY_MARGIN = 0
 
 export const DEFAULT_PLAYER = Map({
 	path: Stack(),
-	angle: null,
+	angle: 0,
 	direction: STRAIGHT,
 	alive: true,
 	score: 0
@@ -137,8 +137,6 @@ function updatePlayer(delta, gamearea, opponents, player) {
     const nextPlayer = move(delta, player),
     
           position = nextPlayer.get('path').first()
-          
-    console.log('next position', position)
         
         
     const paths = collisionPaths(nextPlayer, opponents),
@@ -153,15 +151,15 @@ function updatePlayer(delta, gamearea, opponents, player) {
           
     
     if (hs) {
-        console.log('hs')
+        console.log('hs!')
         return nextPlayer.set('alive', false)
         
     } else if (hw) {
-        console.log('hw')
+        console.log('hw!')
         return nextPlayer.set('alive', false)
         
     } else if (winner) {
-        console.log('winner')
+        console.log('winner :D')
         return nextPlayer.set('alive', false)
                          .set('score', player.get('score') + 1)
     }

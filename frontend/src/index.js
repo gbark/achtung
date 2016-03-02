@@ -30,9 +30,11 @@ game.ports.onlineGame.subscribe(() => {
 	ws = socket('http://localhost:9000')
 	
 	ws.on('gameState', (data) => {
-		console.log('gameState', data)
-		// const data = JSON.parse(event.data)
-		// game.ports.serverInput.send(data)
+		game.ports.serverInput.send(data)
+	})
+	
+	ws.on('playerId', (data) => {
+		console.log('playerId', data)
 	})
 	
 })

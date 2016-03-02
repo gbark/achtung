@@ -85,6 +85,9 @@ sidebar game =
 
                 Roundover ->
                     "Round finished!"
+
+                WaitingPlayers ->
+                    "Waiting for more players to join the game"
           ))]
         , (if game.state == Select then
                 start

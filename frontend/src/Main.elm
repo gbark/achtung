@@ -3,6 +3,8 @@ module Main where
 
 import Html exposing (Html)
 import Set exposing (Set)
+import Result
+import Json.Decode as Json
 
 
 import View exposing (view)
@@ -11,6 +13,7 @@ import Game exposing (..)
 import Online
 import Local
 import Output exposing (..)
+import Decoder 
 
 
 main : Signal Html
@@ -21,7 +24,6 @@ main =
 gameState : Signal Game
 gameState =
     Signal.foldp update defaultGame input
-
 
 
 update : Input -> Game -> Game
@@ -48,11 +50,11 @@ update input game =
 
 input : Signal Input
 input =
-    Signal.map5 Input keyboard delta gamearea time serverInput
+    Signal.map5 Input keyboard delta gamearea time (Decoder.decode serverInput)
         |> Signal.sampleOn delta
         |> Signal.dropRepeats
         
-
+        
 -- Ports
         
         
@@ -68,4 +70,4 @@ port onlineGame =
         |> Signal.dropRepeats
         
              
-port serverInput : Signal (Maybe ServerInput)
+port serverInput : Signal Json.Value

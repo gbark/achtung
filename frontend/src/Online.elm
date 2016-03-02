@@ -1,32 +1,29 @@
 module Online where
 
 
+import Maybe exposing (..)
 import Input exposing (Input)
 import Game exposing (..)
 
 
 update : Input -> Game -> Game
-update ({keys, delta, gamearea, time} as input) ({players, state, round} as game) =
-    let
+update ({keys, delta, gamearea, time, server} as input) ({players, state, round} as game) =
+    let 
         state' =
             state
-            -- updateState input game
 
         players' =
-            players
-            -- updatePlayers input game state'
+            -- merge serverInput with predictive result from updatePlayers
+            server.players
 
         round' =
-            round
-            -- if state == Play && state' == Roundover then
-            --     round + 1
-
-            -- else
-            --     round
+            server.round
 
     in
         { game | players = players'
-               , gamearea = gamearea
+               , gamearea = server.gamearea
                , state = state'
                , round = round'
         }
+        
+       

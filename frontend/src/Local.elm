@@ -91,6 +91,9 @@ updateState {keys} {players, state} =
             else
                 Roundover
 
+        WaitingPlayers ->
+            Select
+
 
 updatePlayers : Input -> Game -> State -> List Player
 updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
@@ -140,8 +143,15 @@ updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
 
                     else
                         map (initPlayer gamearea time) players
+                        
+                WaitingPlayers ->
+                    map (updatePlayer delta gamearea time players)
+                    (mapInputs players keys)
 
         Roundover ->
+            players
+
+        WaitingPlayers ->
             players
 
 

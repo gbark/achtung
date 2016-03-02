@@ -21,8 +21,6 @@ export default function reducer(state = Map(), action) {
                 return state.setIn(['players', action.id], DEFAULT_PLAYER)
             }
             
-            console.log('ADD_PLAYER DISMISSED')
-            
             return state
 			            
         case REMOVE_PLAYER:

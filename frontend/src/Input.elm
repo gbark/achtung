@@ -6,11 +6,13 @@ import Set
 import Char
 import Keyboard
 import Window
+import Color
 
 
 import Config
 import Game exposing (Game, State)
 import Player exposing (PlayerLight)
+import Position exposing (..)
 
 
 type alias Input =
@@ -18,14 +20,7 @@ type alias Input =
     , delta: Time.Time
     , gamearea: (Int, Int)
     , time: Time.Time
-    , serverInput: Maybe ServerInput
-    }
-    
-    
-type alias ServerInput =
-    { players: List PlayerLight
-    , round: Int
-    , state: String
+    , server: Game
     }
     
 
@@ -48,3 +43,23 @@ gamearea : Signal (Int, Int)
 gamearea =
     (Signal.map (\(w, h) -> (w-Config.sidebarWidth-Config.sidebarBorderWidth, h)) Window.dimensions)
     
+    
+-- convertServerInput : ServerInput -> Input
+-- convertServerInput serverInput =
+--     { serverInput | players = (List.map convertPlayers serverInput.players)
+--     } 
+    
+    
+-- convertPlayers player =
+--     { player | id = 99
+--              , path = (List.map convertPath player.path)
+--              , color = Color.rgb 254 221 3
+--              , leftKey = (Char.toCode 'O')
+--              , leftKey = (Char.toCode 'P')
+--              , keyDesc = "O,P"
+--              }
+             
+             
+-- convertPath : Map -> Position (Float, Float)
+-- convertPath path =
+--     Position Hidden (path.x, path.y)
