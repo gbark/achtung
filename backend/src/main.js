@@ -51,5 +51,5 @@ function makeOutput(state) {
 }
 
 
-setInterval(physicsUpdate, 15)
+setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
 setInterval(serverUpdate, 45)
