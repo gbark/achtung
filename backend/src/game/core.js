@@ -46,7 +46,7 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
 	
 	switch(state) {
         case STATE_WAITING_PLAYERS:
-			if (players && players.count() >= PLAYERS_REQUIRED) {
+			if (enoughPlayers(players)) {
                 console.log('Game on!!')
 				return STATE_PLAY
 			}
@@ -55,6 +55,11 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
 			return state
 			
         case STATE_PLAY:
+            if (typeof players === 'undefined') {
+                // All players have disconnected
+                return STATE_WAITING_PLAYERS
+            }
+            
 			const alive = players.filter(p => {
 				return p.get('alive') === true
 			})
@@ -62,14 +67,20 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
                 console.log('Round over!!')
 				return STATE_ROUNDOVER
 			}
+            
 			return state
 			
         case STATE_ROUNDOVER:
 			// Set to PLAY straight away
 			// MAY implement a short wait period
 			// in between rounds
-            console.log('Starting new round!')
-			return STATE_PLAY
+            
+            if (enoughPlayers(players)) {
+                console.log('Starting new round!')
+				return STATE_PLAY
+			}
+            
+			return STATE_WAITING_PLAYERS
 		
 	}
 	
@@ -316,4 +327,13 @@ function randomPosition(gamearea) {
         x,
         y
     }
+}
+
+
+function enoughPlayers(players) {
+    if (players && players.count() >= PLAYERS_REQUIRED) {
+        return true
+    }
+    
+    return false
 }

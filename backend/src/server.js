@@ -17,16 +17,16 @@ export default function startServer(store) {
         
         socket.emit('playerId', socket.client.id)
 
-        store.dispatch(addPlayer(id), store.getState().get('state'))
+        store.dispatch(addPlayer(id))
 
         socket.on('playerOutput', (data) => {
-            store.dispatch(setDirection(data.direction, id, store.getState().get('state')))
+            store.dispatch(setDirection(data.direction, id))
         })
 
         socket.on('disconnect', () => {
             console.log('-- socket.io: client disconnected. id: ', id)
 
-            store.dispatch(removePlayer(id), store.getState().get('state'))
+            store.dispatch(removePlayer(id))
         })
     })
     

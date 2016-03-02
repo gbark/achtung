@@ -24,7 +24,7 @@ export default function reducer(state = Map(), action) {
             return state
 			            
         case REMOVE_PLAYER:
-			return state.deleteIn(['players', action.id])
+			return state.deleteIn(['players'], action.id)
             
         case SET_DIRECTION:
             if (state.get('state') === STATE_PLAY) {

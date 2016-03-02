@@ -14,7 +14,7 @@ export function update(delta, gamearea) {
 }
 
 
-export function addPlayer(id, gameState) {
+export function addPlayer(id) {
 	return {
         type: ADD_PLAYER,
         id
@@ -22,7 +22,7 @@ export function addPlayer(id, gameState) {
 }
 
 
-export function removePlayer(state, id, gameState) {
+export function removePlayer(id) {
 	return {
         type: REMOVE_PLAYER,
         id
@@ -30,7 +30,7 @@ export function removePlayer(state, id, gameState) {
 }
 
 
-export function setDirection(direction, id, gameState) {
+export function setDirection(direction, id) {
 	return {
         type: SET_DIRECTION,
         direction,
