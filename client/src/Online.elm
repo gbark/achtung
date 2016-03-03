@@ -1,20 +1,21 @@
 module Online where
 
 
-import Maybe exposing (..)
 import Input exposing (Input)
 import Game exposing (..)
+import Player exposing (..)
 
 
 update : Input -> Game -> Game
-update ({keys, delta, gamearea, time, server} as input) ({players, state, round} as game) =
+update ({keys, gamearea, clock, server} as input) ({players, state, round} as game) =
     let 
         state' =
             state
 
         players' =
+            players
             -- merge serverInput with predictive result from updatePlayers
-            server.players
+            -- updatePlayers input game server state
 
         round' =
             server.round
@@ -26,4 +27,13 @@ update ({keys, delta, gamearea, time, server} as input) ({players, state, round}
                , round = round'
         }
         
-       
+
+updatePlayers : Input -> Game -> Game -> State -> List Player
+updatePlayers {keys, gamearea, clock, server} {players, state} serverInput nextState =
+    if nextState == Play && state == Play then
+        List.map (updatePlayer clock.delta gamearea players)
+            (mapInputs players keys)
+            
+    else
+        server.players
+        

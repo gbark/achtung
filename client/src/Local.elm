@@ -6,7 +6,6 @@ import Char
 import Random
 import Set
 import List exposing (..)
-import Time exposing (..)
 
 
 import Game exposing (..)
@@ -36,7 +35,7 @@ player3 =
 
 
 update : Input -> Game -> Game
-update ({keys, delta, gamearea, time} as input) ({players, state, round} as game) =
+update input ({players, state, round} as game) =
     let
         state' =
             updateState input game
@@ -53,7 +52,7 @@ update ({keys, delta, gamearea, time} as input) ({players, state, round} as game
 
     in
         { game | players = players'
-               , gamearea = gamearea
+               , gamearea = input.gamearea
                , state = state'
                , round = round'
         }
@@ -95,7 +94,7 @@ updateState {keys} {players, state} =
 
 
 updatePlayers : Input -> Game -> State -> List Player
-updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
+updatePlayers {keys, clock, gamearea} {players, state} nextState =
     case nextState of
         Select ->
             players
@@ -125,26 +124,26 @@ updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
         Play ->
             case state of
                 Select ->
-                    map (updatePlayer delta gamearea time players)
+                    map (updatePlayer clock.delta gamearea players)
                     (mapInputs players keys)
 
                 Start ->
-                    map (initPlayer gamearea time) players
+                    map (initPlayer gamearea clock.time) players
 
                 Play ->
-                    map (updatePlayer delta gamearea time players)
+                    map (updatePlayer clock.delta gamearea players)
                     (mapInputs players keys)
 
                 Roundover ->
                     -- Reset score when playing single player mode
                     if length players == 1 then
-                        map resetScore players |> map (initPlayer gamearea time)
+                        map resetScore players |> map (initPlayer gamearea clock.time)
 
                     else
-                        map (initPlayer gamearea time) players
+                        map (initPlayer gamearea clock.time) players
                         
                 WaitingPlayers ->
-                    map (updatePlayer delta gamearea time players)
+                    map (updatePlayer clock.delta gamearea players)
                     (mapInputs players keys)
 
         Roundover ->
@@ -154,10 +153,10 @@ updatePlayers {keys, delta, gamearea, time} {players, state} nextState =
             players
 
 
-initPlayer : (Int, Int) -> Time -> Player -> Player
+initPlayer : (Int, Int) -> Float -> Player -> Player
 initPlayer gamearea time player =
     let
-        seed = (truncate (inMilliseconds time)) + player.id ^ 3
+        seed = (truncate time) + player.id ^ 3
 
     in
         { player | angle = randomAngle seed

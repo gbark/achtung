@@ -17,22 +17,22 @@ import Position exposing (..)
 
 type alias Input =
     { keys: Set.Set Char.KeyCode
-    , delta: Time.Time
     , gamearea: (Int, Int)
-    , time: Time.Time
+    , clock: Clock
     , server: Game
     }
     
-
-delta : Signal Time
-delta =
-    Signal.map inSeconds (fps 35)
+    
+type alias Clock =
+    { delta : Float
+    , time : Float
+    }
     
 
-time : Signal Time
-time =
-    (every millisecond)
-    
+clock : Signal Clock
+clock =
+    Signal.map (\(time, delta) -> { time = time, delta = (inSeconds delta) }) (timestamp ((fps 35)))
+        
 
 keyboard : Signal (Set.Set Char.KeyCode)
 keyboard =

@@ -50,8 +50,8 @@ update input game =
 
 input : Signal Input
 input =
-    Signal.map5 Input keyboard delta gamearea time (Decoder.decode serverInput)
-        |> Signal.sampleOn delta
+    Signal.map4 Input keyboard gamearea clock (Decoder.decode serverInput)
+        |> Signal.sampleOn clock
         |> Signal.dropRepeats
         
         

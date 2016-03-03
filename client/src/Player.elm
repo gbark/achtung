@@ -6,7 +6,6 @@ import Char
 import Random
 import Set
 import List exposing (..)
-import Time exposing (..)
 
 
 import Utils exposing (..)
@@ -65,8 +64,8 @@ defaultPlayer =
     }
 
 
-updatePlayer : Time -> (Int, Int) -> Time -> List Player -> Player -> Player
-updatePlayer delta gamearea time players player =
+updatePlayer : Float -> (Int, Int) -> List Player -> Player -> Player
+updatePlayer delta gamearea players player =
     if not player.alive then
         player
 
@@ -128,7 +127,7 @@ collisionPaths player players =
         filter isVisible (concat [myPath, opponentsPaths])
 
 
-move : Time -> Player -> Player
+move : Float -> Player -> Player
 move delta player =
     let
         position =
