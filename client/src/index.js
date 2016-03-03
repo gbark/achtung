@@ -3,7 +3,8 @@ import socket from 'socket.io-client'
 
 
 const game = Elm.fullscreen(Elm.Main, {
-	serverInput: null
+	serverInput: null,
+	serverIdInput: null
 })
 
 
@@ -11,8 +12,6 @@ let ws = null
 
 
 game.ports.playerOutput.subscribe((output) => {
-	// console.log('playerOutput', output)
-	
 	if (ws && ws.connected) {
 		ws.emit('playerOutput', output)
 	}
@@ -21,8 +20,6 @@ game.ports.playerOutput.subscribe((output) => {
 
 
 game.ports.onlineGame.subscribe(() => {
-	console.log('onlineGame')
-	
 	if (ws) {
 		ws.close()
 	}
@@ -33,8 +30,8 @@ game.ports.onlineGame.subscribe(() => {
 		game.ports.serverInput.send(data)
 	})
 	
-	ws.on('playerId', (data) => {
-		console.log('playerId', data)
+	ws.on('playerId', (id) => {
+		game.ports.serverIdInput.send(id)
 	})
 	
 })

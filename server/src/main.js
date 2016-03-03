@@ -7,7 +7,7 @@ const store = makeStore()
 const io = startServer(store)
 
 
-// calculate physics and game state. loop at 15ms interval
+// calculate physics and game state. loop at same interval as clients
 let lastInv = +new Date()
 function physicsUpdate() {
 	const now = +new Date()

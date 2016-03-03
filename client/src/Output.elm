@@ -9,7 +9,7 @@ type alias PlayerOutput =  { direction: String, localTime: Float }
 
 
 makePlayerOutput : Input -> PlayerOutput
-makePlayerOutput {keys, time} =
+makePlayerOutput {keys, clock} =
     let 
         directionString =
             case toDirection keys defaultPlayer of
@@ -24,5 +24,5 @@ makePlayerOutput {keys, time} =
 
     in
         { direction = directionString
-        , localTime = time
+        , localTime = clock.time
         }

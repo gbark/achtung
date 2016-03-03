@@ -7,7 +7,7 @@ import Player exposing (..)
 
 
 update : Input -> Game -> Game
-update ({keys, gamearea, clock, server} as input) ({players, state, round} as game) =
+update ({keys, gamearea, clock, server, serverId} as input) ({players, state, round} as game) =
     let 
         state' =
             state

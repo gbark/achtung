@@ -50,12 +50,12 @@ update input game =
 
 input : Signal Input
 input =
-    Signal.map4 Input keyboard gamearea clock (Decoder.decode serverInput)
+    Signal.map5 Input keyboard gamearea clock (Decoder.decode serverInput) serverIdInput
         |> Signal.sampleOn clock
         |> Signal.dropRepeats
         
         
--- Ports
+-- Output Ports
         
         
 port playerOutput : Signal PlayerOutput
@@ -69,5 +69,11 @@ port onlineGame =
     Signal.map (.mode >> (==) Game.Online) gameState
         |> Signal.dropRepeats
         
+        
+-- Input Ports
+        
              
 port serverInput : Signal Json.Value
+
+
+port serverIdInput : Signal (Maybe String)

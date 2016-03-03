@@ -20,6 +20,7 @@ type alias Input =
     , gamearea: (Int, Int)
     , clock: Clock
     , server: Game
+    , serverId: Maybe String
     }
     
     
