@@ -7,6 +7,9 @@ const store = makeStore()
 const io = startServer(store)
 
 
+const GAMEAREA = [500, 500]
+
+
 // calculate physics and game state. loop at same interval as clients
 let lastInv = +new Date()
 function physicsUpdate() {
@@ -14,7 +17,7 @@ function physicsUpdate() {
 	const delta = (now - lastInv)/1000
 	lastInv = now
 	
-	store.dispatch(update(delta, [500, 500]))
+	store.dispatch(update(delta, GAMEAREA))
 	
 }
 
@@ -45,7 +48,7 @@ function makeOutput(state) {
 	return state
 			.set('players', players)
 			.set('mode', 'Online')
-			.set('gamearea', [500, 500])
+			.set('gamearea', GAMEAREA)
 			.toJS()
 	
 }

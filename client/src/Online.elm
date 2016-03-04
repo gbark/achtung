@@ -9,22 +9,17 @@ import Player exposing (..)
 update : Input -> Game -> Game
 update ({keys, gamearea, clock, server, serverId} as input) ({players, state, round} as game) =
     let 
-        state' =
-            state
-
         players' =
-            players
+            server.players
             -- merge serverInput with predictive result from updatePlayers
             -- updatePlayers input game server state
-
-        round' =
-            server.round
+            
 
     in
         { game | players = players'
                , gamearea = server.gamearea
-               , state = state'
-               , round = round'
+               , state = server.state
+               , round = server.round
         }
         
 

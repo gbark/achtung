@@ -5,11 +5,12 @@ import Input exposing (Input)
 import Player exposing (..)
 
 
-type alias PlayerOutput =  { direction: String, localTime: Float }
+type alias PlayerOutput =  { direction: String
+                           }
 
 
 makePlayerOutput : Input -> PlayerOutput
-makePlayerOutput {keys, clock} =
+makePlayerOutput {keys} =
     let 
         directionString =
             case toDirection keys defaultPlayer of
@@ -24,5 +25,4 @@ makePlayerOutput {keys, clock} =
 
     in
         { direction = directionString
-        , localTime = clock.time
         }
