@@ -103,8 +103,10 @@ function updatePlayers(delta, gamearea, state, nextState, players = Map()) {
                 
             } else if (state === STATE_ROUNDOVER) {
                 
-                return players.map((player) => {
-                    return initPlayer(gamearea, player)
+                return players.map((player, id) => {
+                    const opponents = players.delete(id)
+                    const nextPlayer = updatePlayer(delta, gamearea, opponents, player)
+                    return initPlayer(gamearea, nextPlayer)
                 })
                 
             } else {
@@ -133,9 +135,6 @@ function updateRound(state, nextState, round = 1) {
 }
 
 
-
-
-
 function updatePlayer(delta, gamearea, opponents, player) {
     if (!player.get('alive')) {
         return player
@@ -160,7 +159,7 @@ function updatePlayer(delta, gamearea, opponents, player) {
           
           winner = opponents.filter(p => { return p.get('alive') === true }).count() < 1
           
-    
+          
     if (hs) {
         console.log('hs!')
         return nextPlayer.set('alive', false)
@@ -172,8 +171,8 @@ function updatePlayer(delta, gamearea, opponents, player) {
     } else if (winner) {
         console.log('winner :D')
         return nextPlayer.set('alive', false)
-                         .set('score', player.get('score') + 1)
-    }
+                         .set('score', player.get('score') + 1)                    
+    } 
     
     
     return nextPlayer

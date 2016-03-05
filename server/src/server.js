@@ -9,8 +9,8 @@ const PORT = 9000
 
 let colors = [
     'yellow',
-    'blue',
     'red',
+    'blue',
     'green',
     'purple',
     'orange',
