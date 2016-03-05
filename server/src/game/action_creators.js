@@ -14,10 +14,11 @@ export function update(delta, gamearea) {
 }
 
 
-export function addPlayer(id) {
+export function addPlayer(id, color) {
 	return {
         type: ADD_PLAYER,
-        id
+        id,
+        color
     }
 }
 

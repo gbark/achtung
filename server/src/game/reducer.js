@@ -18,7 +18,7 @@ export default function reducer(state = Map(), action) {
             
         case ADD_PLAYER:
             if (state.get('state') === STATE_WAITING_PLAYERS) {
-                return state.setIn(['players', action.id], DEFAULT_PLAYER)
+                return state.setIn(['players', action.id], DEFAULT_PLAYER.set('color', action.color))
             }
             
             return state

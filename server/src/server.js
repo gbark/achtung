@@ -7,6 +7,18 @@ import { addPlayer
 
 const PORT = 9000
 
+let colors = [
+    'yellow',
+    'blue',
+    'red',
+    'green',
+    'purple',
+    'orange',
+    'white',
+    'brown',
+    'grey'
+]
+
 export default function startServer(store) {
     const io = new Server().attach(PORT)
     console.log('-- socket.io: server started on port ', PORT)
@@ -17,7 +29,7 @@ export default function startServer(store) {
         
         socket.emit('playerId', socket.client.id)
 
-        store.dispatch(addPlayer(id))
+        store.dispatch(addPlayer(id, colors.shift()))
 
         socket.on('playerOutput', (data) => {
             store.dispatch(setDirection(data.direction, id))

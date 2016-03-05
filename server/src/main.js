@@ -34,15 +34,12 @@ function serverUpdate() {
 
 
 function makeOutput(state) {
-	let i = 1
 	const players = state.get('players').map((v, k) => {
 		return v
-			.set('id', i++)
-			.set('color', 'foo')
+			.set('id', k)
 			.set('leftKey', 'foo')
 			.set('rightKey', 'foo')
 			.set('keyDesc', 'foo')
-		// return v.set('id', k)
 	}).toArray()
 	
 	return state

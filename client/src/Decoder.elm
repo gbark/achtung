@@ -103,7 +103,17 @@ direction s =
 
 color : String -> Decoder Color.Color
 color s =
-    succeed Color.lightBlue
+    case s of 
+        "red" -> succeed Color.red
+        "orange" -> succeed Color.orange
+        "yellow" -> succeed Color.yellow
+        "green" -> succeed Color.green
+        "blue" -> succeed Color.blue
+        "purple" -> succeed Color.purple
+        "brown" -> succeed Color.brown
+        "white" -> succeed Color.white
+        "grey" -> succeed Color.grey
+        _ -> fail (s ++ " is not a supported color")
 
 
 key : Decoder Char.KeyCode

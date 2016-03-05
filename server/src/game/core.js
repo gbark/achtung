@@ -19,7 +19,8 @@ export const DEFAULT_PLAYER = Map({
 	angle: 0,
 	direction: STRAIGHT,
 	alive: true,
-	score: 0
+	score: 0,
+    color: null
 })
 
 
