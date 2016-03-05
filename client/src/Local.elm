@@ -5,6 +5,7 @@ import Color
 import Char
 import Random
 import Set
+import String
 import List exposing (..)
 
 
@@ -16,7 +17,7 @@ import Position exposing (..)
 
 player2 : Player
 player2 =
-    { defaultPlayer | id = 2
+    { defaultPlayer | id = "2"
                     , color = Color.rgb 229 49 39
                     , leftKey = 40
                     , rightKey = 39
@@ -26,7 +27,7 @@ player2 =
 
 player3 : Player
 player3 =
-    { defaultPlayer | id = 3
+    { defaultPlayer | id = "3"
                     , color = Color.rgb 25 100 183
                     , leftKey = (Char.toCode 'N')
                     , rightKey = (Char.toCode 'M')
@@ -156,7 +157,11 @@ updatePlayers {keys, clock, gamearea} {players, state} nextState =
 initPlayer : (Int, Int) -> Float -> Player -> Player
 initPlayer gamearea time player =
     let
-        seed = (truncate time) + player.id ^ 3
+        idInt = 
+            Result.withDefault 0 (String.toInt player.id)
+            
+        seed = 
+            (truncate time) + idInt ^ 3
 
     in
         { player | angle = randomAngle seed

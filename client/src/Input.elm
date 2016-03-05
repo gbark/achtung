@@ -11,7 +11,6 @@ import Color
 
 import Config
 import Game exposing (Game, State)
-import Player exposing (PlayerLight)
 import Position exposing (..)
 
 
@@ -22,13 +21,10 @@ type alias Input =
     , server: Game
     , serverId: Maybe String
     }
-    
-    
 type alias Clock =
     { delta : Float
     , time : Float
     }
-    
 
 clock : Signal Clock
 clock =

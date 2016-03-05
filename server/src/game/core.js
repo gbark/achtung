@@ -51,7 +51,6 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
 				return STATE_PLAY
 			}
             
-            console.log('Waiting for ' + PLAYERS_REQUIRED + ' players')
 			return state
 			
         case STATE_PLAY:

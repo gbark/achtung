@@ -14,7 +14,7 @@ import Config
 
 
 type alias Player =
-    { id: Int
+    { id: String
     , path: List (Position (Float, Float))
     , angle: Float
     , direction: Direction
@@ -24,22 +24,6 @@ type alias Player =
     , leftKey: Char.KeyCode
     , rightKey: Char.KeyCode
     , keyDesc: String
-    }
-    
-    
-type alias PositionAsRecord = 
-    { x: Float
-    , y: Float
-    , visible: Bool
-    }
-
-
-type alias PlayerLight =
-    { path: List PositionAsRecord
-    , angle: Float
-    , direction: String
-    , alive: Bool
-    , score: Int
     }
 
 
@@ -51,7 +35,7 @@ type Direction
 
 defaultPlayer : Player
 defaultPlayer =
-    { id = 1
+    { id = "1"
     , path = []
     , angle = 0
     , direction = Straight

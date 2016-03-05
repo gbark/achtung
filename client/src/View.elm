@@ -114,9 +114,9 @@ scoreboard game =
 
 
 scoreboardPlayer {keyDesc, id, score, color} =
-    li [ key (toString id), style [ ("color", (colorToString color)) ] ]
+    li [ key id, style [ ("color", (colorToString color)) ] ]
        [ Html.text ("Player "
-                    ++ (toString id)
+                    ++ id
                     ++ " ("
                     ++ keyDesc
                     ++ ") -- "

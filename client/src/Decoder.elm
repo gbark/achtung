@@ -56,7 +56,7 @@ mode s =
 
 player : Decoder Player
 player =
-    map Player ("id" := int)
+    map Player ("id" := string)
         `apply` ("path" := list position)
         `apply` ("angle" := float)
         `apply` ("direction" := string `andThen` direction)
