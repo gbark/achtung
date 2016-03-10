@@ -1,9 +1,8 @@
-# elm-package generated files
 elm-stuff/
-# elm-repl generated files
 repl-temp-*
 .vscode
 elm.js
 node_modules
 public/build
 jsconfig.json
+npm-debug.log
