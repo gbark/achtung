@@ -26,7 +26,7 @@ function physicsUpdate() {
 let prevState = store.getState()
 function serverUpdate() {
 	const newState = store.getState()
-	if (!newState.equals(prevState)) {
+	if (newState.get('players') && !newState.equals(prevState)) {
 		io.emit('gameState', makeOutput(newState))
 		prevState = newState
 	}
