@@ -16,6 +16,7 @@ import Config
 type alias Player =
     { id: String
     , path: List (Position (Float, Float))
+    , lastPositions: List (Position (Float, Float))
     , angle: Float
     , direction: Direction
     , alive: Bool
@@ -24,6 +25,17 @@ type alias Player =
     , leftKey: Char.KeyCode
     , rightKey: Char.KeyCode
     , keyDesc: String
+    }
+        
+
+-- Light weight Player object for sending over the wire
+type alias PlayerLight =
+    { id: String
+    , lastPositions: List (Position (Float, Float))
+    , angle: Maybe Float
+    , alive: Maybe Bool
+    , score: Maybe Int
+    , color: Maybe Color.Color
     }
 
 
@@ -37,6 +49,7 @@ defaultPlayer : Player
 defaultPlayer =
     { id = "1"
     , path = []
+    , lastPositions = []
     , angle = 0
     , direction = Straight
     , alive = True

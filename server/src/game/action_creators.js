@@ -2,6 +2,7 @@ export const UPDATE = 'achtung/UPDATE'
 export const ADD_PLAYER = 'achtung/ADD_PLAYER'
 export const REMOVE_PLAYER = 'achtung/REMOVE_PLAYER'
 export const SET_DIRECTION = 'achtung/SET_DIRECTION'
+export const STATE_PUSHED = 'achtung/STATE_PUSHED'
 
 
 
@@ -36,5 +37,12 @@ export function setDirection(direction, id) {
         type: SET_DIRECTION,
         direction,
         id
+    }
+}
+
+
+export function statePushed() {
+	return {
+        type: STATE_PUSHED
     }
 }

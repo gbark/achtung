@@ -1,4 +1,4 @@
-import {List, Map, fromJS, Stack} from 'immutable'
+import {List, Map, fromJS} from 'immutable'
 
 const INITIAL_STATE = Map()
 const PLAYERS_REQUIRED = 2
@@ -15,7 +15,8 @@ const SAFETY_MARGIN = 0
 
 
 export const DEFAULT_PLAYER = Map({
-	path: Stack(),
+	path: List(),
+    lastPositions: List(),
 	angle: 0,
 	direction: STRAIGHT,
 	alive: true,
@@ -200,11 +201,15 @@ function move(delta, player) {
           
           puncturedPath = puncture(player.get('path'), holes),
           
-          path = puncturedPath.unshift({ x: nextX, y: nextY, visible: true })
+          nextPosition = { x: nextX, y: nextY, visible: true },
+          
+          path = puncturedPath.unshift(nextPosition)
 
     
     return player.set('angle', angle)
                  .set('path', path)
+                 .set('puncture', holes)
+                 .set('lastPositions', player.get('lastPositions').unshift(nextPosition))
 }
 
 
@@ -252,7 +257,7 @@ function puncture(path, width) {
 function collisionPaths(player, opponents) {
     const opponentsPaths = opponents.reduce((acc, o) => {
               return acc.push(o.get('path'))
-          }, Stack()),
+          }, List()),
         
           myPath = player.get('path').skip(10),
         
@@ -299,7 +304,7 @@ function hitWall(position, gamearea) {
 
 function initPlayer(gamearea, player) {
     const angle = randomAngle(),
-          path = Stack().push(randomPosition(gamearea))
+          path = List().push(randomPosition(gamearea))
           
     
     return player.set('angle', angle)

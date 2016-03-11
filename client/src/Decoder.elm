@@ -5,11 +5,11 @@ import Json.Decode as Json exposing (..)
 import Color
 import Char
 import Player exposing (..)
-import Game exposing (..)
+import Game exposing (GameLight, defaultGameLight, State)
 import Position exposing (..)
 
 
-decode : Signal Json.Value -> Signal Game
+decode : Signal Json.Value -> Signal GameLight
 decode json = 
     Signal.map fromResult (Signal.map (decodeValue game) json)
     
@@ -21,53 +21,47 @@ fromResult result =
         
         Err msg ->
             let log = Debug.log "err" msg in
-            defaultGame
+            defaultGameLight
 
 
-game : Decoder Game
+game : Decoder GameLight
 game =
-    object5 Game
+    object4 GameLight
         ("players" := list player)
-        ("state" := string `andThen` state)
-        ("mode" := string `andThen` mode)
-        ("gamearea" := tuple2 (,) int int)
-        ("round" := int)
+        (maybe ("state" := string `andThen` state))
+        (maybe ("gamearea" := tuple2 (,) int int))
+        (maybe ("round" := int))
         
         
 state : String -> Decoder State
 state s =
     case s of
-        "Select" -> succeed Select
-        "Start" -> succeed Start
-        "Play" -> succeed Play
-        "Roundover" -> succeed Roundover
-        "WaitingPlayers" -> succeed WaitingPlayers
+        "Select" -> succeed Game.Select
+        "Start" -> succeed Game.Start
+        "Play" -> succeed Game.Play
+        "Roundover" -> succeed Game.Roundover
+        "WaitingPlayers" -> succeed Game.WaitingPlayers
         _ -> fail (s ++ " is not a State")
         
         
-mode : String -> Decoder Mode
+mode : String -> Decoder Game.Mode
 mode s =
     case s of
-        "Undecided" -> succeed Undecided
-        "Local" -> succeed Local
-        "Online" -> succeed Online
+        "Undecided" -> succeed Game.Undecided
+        "Local" -> succeed Game.Local
+        "Online" -> succeed Game.Online
         _ -> fail (s ++ " is not a Mode")
-        
+    
 
-player : Decoder Player
+player : Decoder PlayerLight
 player =
-    map Player ("id" := string)
-        `apply` ("path" := list position)
-        `apply` ("angle" := float)
-        `apply` ("direction" := string `andThen` direction)
-        `apply` ("alive" := bool)
-        `apply` ("score" := int)
-        `apply` ("color" := string `andThen` color)
-        `apply` ("leftKey" := key)
-        `apply` ("rightKey" := key)
-        `apply` ("keyDesc" := string)
+    map PlayerLight ("id" := string)
+        `apply` ("lastPositions" := list position)
+        `apply` (maybe ("angle" := float))
+        `apply` (maybe ("alive" := bool))
+        `apply` (maybe ("score" := int))
+        `apply` (maybe ("color" := string `andThen` color))
         
-
 
 apply : Decoder (a -> b) -> Decoder a -> Decoder b
 apply func value =
@@ -115,9 +109,3 @@ color s =
         "grey" -> succeed Color.grey
         _ -> fail (s ++ " is not a supported color")
 
-
-key : Decoder Char.KeyCode
-key =
-    succeed (Char.toCode 'P')
-    
-    

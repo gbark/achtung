@@ -10,7 +10,7 @@ import Color
 
 
 import Config
-import Game exposing (Game, State)
+import Game exposing (GameLight, State)
 import Position exposing (..)
 
 
@@ -18,13 +18,16 @@ type alias Input =
     { keys: Set.Set Char.KeyCode
     , gamearea: (Int, Int)
     , clock: Clock
-    , server: Game
+    , server: GameLight
     , serverId: Maybe String
     }
+    
+    
 type alias Clock =
     { delta : Float
     , time : Float
     }
+
 
 clock : Signal Clock
 clock =

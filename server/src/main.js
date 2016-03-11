@@ -1,6 +1,6 @@
 import startServer from './server'
 import makeStore from './store'
-import {update} from './game/action_creators'
+import {update, statePushed} from './game/action_creators'
 
 
 const store = makeStore()
@@ -28,6 +28,7 @@ function serverUpdate() {
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
 		io.emit('gameState', makeOutput(newState))
+		store.dispatch(statePushed())
 		prevState = newState
 	}
 }
@@ -37,9 +38,8 @@ function makeOutput(state) {
 	const players = state.get('players').map((v, k) => {
 		return v
 			.set('id', k)
-			.set('leftKey', 'foo')
-			.set('rightKey', 'foo')
-			.set('keyDesc', 'foo')
+			.remove('path')
+			.remove('direction')
 	}).toArray()
 	
 	return state
