@@ -44,8 +44,8 @@ function makeOutput(state) {
 	
 	return state
 			.set('players', players)
-			.set('mode', 'Online')
 			.set('gamearea', GAMEAREA)
+			.set('serverTime', +new Date())
 			.toJS()
 	
 }

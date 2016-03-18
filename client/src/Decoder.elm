@@ -20,17 +20,17 @@ fromResult result =
             value
         
         Err msg ->
-            let log = Debug.log "err" msg in
             defaultGameLight
 
 
 game : Decoder GameLight
 game =
-    object4 GameLight
+    object5 GameLight
         ("players" := list player)
         (maybe ("state" := string `andThen` state))
         (maybe ("gamearea" := tuple2 (,) int int))
         (maybe ("round" := int))
+        ("serverTime" := float)
         
         
 state : String -> Decoder State

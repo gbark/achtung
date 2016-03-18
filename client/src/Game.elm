@@ -29,6 +29,7 @@ type alias GameLight =
     , state: Maybe State
     , gamearea: Maybe (Int, Int)
     , round: Maybe Int
+    , serverTime: Float
     }
     
 
@@ -48,5 +49,6 @@ defaultGameLight =
     , state = Just WaitingPlayers
     , gamearea = Just (0, 0)
     , round = Just 0
+    , serverTime = 0
     }
     
