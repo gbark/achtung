@@ -62,8 +62,8 @@ updatePlayers input game =
     
             Play ->
                 if game.state == Roundover || game.state == WaitingPlayers then
-                    let resetted = List.map (\p -> { p | path = [], lastPositions = [] }) game.players in
-                    List.map (syncPlayer resetted) input.server.players
+                    let players' = List.map resetPlayer game.players in
+                    List.map (syncPlayer players') input.server.players
                 
                 else
                     List.map (syncPlayer game.players) input.server.players
@@ -75,14 +75,6 @@ updatePlayers input game =
                 List.map (syncPlayer game.players) input.server.players
                 
 
-
-    
--- Remove players not on the server
--- clean ps psl =
---     List.filter (.id >> (List.filter (.id >> (==) playerLight.id) psl)) ps
-
-                
-
 syncPlayer : List Player -> PlayerLight -> Player
 syncPlayer players playerLight =
     let 
@@ -90,12 +82,11 @@ syncPlayer players playerLight =
             Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) playerLight.id) players
             
         path' =
-            player.path ++ playerLight.lastPositions
-            -- if player.lastPositions /= playerLight.lastPositions then
-            --     player.path ++ playerLight.lastPositions
+            if player.lastPositions /= playerLight.lastPositions then
+                player.path ++ playerLight.lastPositions
                 
-            -- else
-            --     player.path
+            else
+                player.path
         
     in
         { player | id = playerLight.id
@@ -106,16 +97,11 @@ syncPlayer players playerLight =
                  , color = withDefault player.color playerLight.color 
                  , lastPositions = playerLight.lastPositions
                  }
-                 
-            
--- fresh : List (Position (Float, Float)) -> List (Position (Float, Float)) -> Bool
--- fresh ps1 ps2 = 
---     let 
---         head1 =
---             asXY (Maybe.withDefault (Visible (0,0)) (List.head ps1))
-            
---         head2 =
---             asXY (Maybe.withDefault (Visible (0,0)) (List.head ps2))
-            
---     in
---         fst head1 == fst head2 && snd head1 == snd head2
+
+
+resetPlayer : Player -> Player
+resetPlayer player =
+    { player | path = defaultPlayer.path
+             , lastPositions = defaultPlayer.lastPositions
+             , angle = defaultPlayer.angle
+             }

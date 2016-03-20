@@ -36,6 +36,7 @@ type alias PlayerLight =
     , alive: Maybe Bool
     , score: Maybe Int
     , color: Maybe Color.Color
+    , puncture: Maybe Bool
     }
 
 

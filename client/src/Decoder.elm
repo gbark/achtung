@@ -61,6 +61,7 @@ player =
         `apply` (maybe ("alive" := bool))
         `apply` (maybe ("score" := int))
         `apply` (maybe ("color" := string `andThen` color))
+        `apply` (maybe ("puncture" := bool))
         
 
 apply : Decoder (a -> b) -> Decoder a -> Decoder b

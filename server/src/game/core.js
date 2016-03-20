@@ -162,15 +162,15 @@ function updatePlayer(delta, gamearea, opponents, player) {
           
           
     if (hs) {
-        console.log('hs!')
+        // console.log('hs!')
         return nextPlayer.set('alive', false)
         
     } else if (hw) {
-        console.log('hw!')
+        // console.log('hw!')
         return nextPlayer.set('alive', false)
         
     } else if (winner) {
-        console.log('winner :D')
+        // console.log('winner :D')
         return nextPlayer.set('alive', false)
                          .set('score', player.get('score') + 1)                    
     } 
