@@ -31,7 +31,7 @@ export function update(delta, gamearea, game = Map()) {
 		  nextPlayers = updatePlayers(delta, gamearea, game.get('state'), nextState, game.get('players')),
 		  
 		  nextRound = updateRound(game.get('state'), nextState, game.get('round'))	
-	
+    
 	
 	return game.set('state', nextState)
 			   .set('players', nextPlayers)
@@ -309,6 +309,7 @@ function initPlayer(gamearea, player) {
     
     return player.set('angle', angle)
                  .set('path', path)
+                 .set('lastPositions', path)
                  .set('alive', true)
 }
 
