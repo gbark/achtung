@@ -127,38 +127,46 @@ collisionPaths player players =
 
 move : Float -> Player -> Player
 move delta player =
-    let
-        position =
-            Maybe.withDefault (Visible (0, 0)) (head player.path)
-
-        (x, y) =
-            asXY position
-
+    let 
+        position = 
+            head player.path
+            
         angle =
             case player.direction of
                 Left -> player.angle + Config.maxAngleChange
                 Right -> player.angle + -Config.maxAngleChange
                 Straight -> player.angle
-
-        vx =
-            cos (angle * pi / 180)
-
-        vy =
-            sin (angle * pi / 180)
-
-        nextX =
-            x + vx * (delta * Config.speed)
-
-        nextY =
-            y + vy * (delta * Config.speed)
-
-        path' =
-            puncture player.path <| randomHole <| truncate nextX
-
+            
     in
-        { player | angle = angle
-                 , path = Visible (nextX, nextY) :: path'
-        }
+        case position of
+            Just p ->
+                let
+                    (x, y) =
+                        asXY p
+            
+                    vx =
+                        cos (angle * pi / 180)
+            
+                    vy =
+                        sin (angle * pi / 180)
+            
+                    nextX =
+                        x + vx * (delta * Config.speed)
+            
+                    nextY =
+                        y + vy * (delta * Config.speed)
+            
+                    path' =
+                        puncture player.path <| randomHole <| truncate nextX
+            
+                in
+                    { player | angle = angle
+                             , path = Visible (nextX, nextY) :: path'
+                    }
+            
+            Nothing ->
+                { player | angle = angle }
+        
 
 
 puncture path width =
