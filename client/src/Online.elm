@@ -34,21 +34,20 @@ update ({keys, gamearea, clock, server, serverId} as input) ({players, state, ro
         --     List.map (syncPlayer players) opponents
     
     -- in
-    { game |  --players = updatePlayers input game
-        --    , players = [player''] ++ opponents'
-            players = players
-            , gamearea = withDefault gamearea server.gamearea 
-            , state = withDefault state server.state 
-            , round = withDefault round server.round 
-            , serverTime = server.serverTime
+    { game | players = updatePlayers input game
+           , gamearea = withDefault gamearea server.gamearea 
+           , state = withDefault state server.state 
+           , round = withDefault round server.round 
+           , serverTime = server.serverTime
     }
 
 
 updatePlayers : Input -> Game -> List Player
-updatePlayers input game =
+updatePlayers { server, clock } game =
     let 
+        log2 = Debug.log "server.state" server.state
         nextState =
-            case input.server.state of
+            case server.state of
                 Just state -> 
                     state
                 
@@ -58,50 +57,47 @@ updatePlayers input game =
         state = 
             game.state
         
-        updates = 
-            game.serverTime /= input.server.serverTime
-            
-        serverPlayers =
-            if updates then
-                List.map resetPlayerLight input.server.players
-            
-            else
-                input.server.players
+        stale = 
+            game.serverTime == server.serverTime
                     
     in
         if nextState == Play then
             if state == Roundover || state == WaitingPlayers then
-                let players' = List.map resetPlayer game.players in
-                List.map (syncPlayer players' updates) serverPlayers
+                let 
+                    players' = 
+                        List.map resetPlayer game.players 
+                        
+                in
+                    List.map (syncPlayer players' stale clock.delta nextState) server.players
             
             else
-                List.map (syncPlayer game.players updates) serverPlayers
+                List.map (syncPlayer game.players stale clock.delta nextState) server.players
             
         else 
-            List.map (syncPlayer game.players updates) serverPlayers
+            List.map (syncPlayer game.players stale clock.delta nextState) server.players
                 
 
-syncPlayer : List Player -> Bool -> PlayerLight -> Player
-syncPlayer players stale playerLight =
+syncPlayer : List Player -> Bool -> Float -> State -> PlayerLight -> Player
+syncPlayer players stale delta nextState playerLight =
     let 
         player = 
             Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) playerLight.id) players
             
-        path' =
-            if player.pathBuffer /= playerLight.pathBuffer && not stale then
-                player.path -- playerLight.pathBuffer ++ player.path
+        { path, pathBuffer } =
+            if not stale && nextState == Play then
+                updatePathAndBuffer delta player
                 
             else
-                player.path
+                player
         
     in
         { player | id = playerLight.id
-                 , path = path'
+                 , path = path
                  , angle = withDefault player.angle playerLight.angle
                  , alive = withDefault player.alive playerLight.alive
                  , score = withDefault player.score playerLight.score
                  , color = withDefault player.color playerLight.color 
-                 , pathBuffer = playerLight.pathBuffer
+                 , pathBuffer = pathBuffer
                  }
 
 
@@ -109,15 +105,6 @@ resetPlayer player =
     { player | path = defaultPlayer.path
              , pathBuffer = defaultPlayer.pathBuffer
              }
-
-
-resetPlayerLight player =
-    { player | pathBuffer = Array.empty }
-    
-    
--- Clear positions from old rounds.
-cleanBuffer positions pathBuffer round =
-    List.filter (.round >> (==) round) (pathBuffer ++ positions)
     
     
 -- Pop real(s) from pathBuffer.
@@ -130,7 +117,7 @@ cleanBuffer positions pathBuffer round =
 -- If no fake needs to be replaced, push real to front.
 -- If positions were replaced, then push one fake. 
 -- Always need to return path with +1 length
-updatePathAndBuffer player =
+updatePathAndBuffer delta player =
     let 
         reals = 
             Array.filter (not << isFake) player.pathBuffer
@@ -140,23 +127,25 @@ updatePathAndBuffer player =
             
     in
         if Array.isEmpty reals then
-            noReals reals fakes player
+            noReals fakes delta player
         
         else if Array.length reals > Array.length fakes then
             realsAreGreater reals fakes player
             
         else if not (Array.isEmpty reals) then
-            realsAreLess reals fakes player
+            realsAreLess reals fakes delta player
                             
         else 
-            realsAndFakesAreSame reals fakes player
+            realsAndFakesAreSame reals fakes delta player
                                 
 
-noReals : Array PositionOnline -> Array PositionOnline -> Player -> Player
-noReals reals fakes ({ pathBuffer } as player) =
+noReals : Array PositionOnline -> Float -> Player -> Player
+noReals fakes delta ({ pathBuffer } as player) =
     let 
+        log = Debug.log "noReals" True
+        
         fake = 
-            getFake 
+            getFake delta player
             
         path' =
             [asPosition fake] ++ player.path
@@ -172,6 +161,8 @@ noReals reals fakes ({ pathBuffer } as player) =
 realsAreGreater : Array PositionOnline -> Array PositionOnline -> Player -> Player  
 realsAreGreater reals fakes ({ pathBuffer } as player) =
     let
+        log = Debug.log "realsAreGreater" True
+        
         realsLength =
             Array.length reals
             
@@ -193,9 +184,11 @@ realsAreGreater reals fakes ({ pathBuffer } as player) =
                  }
                 
              
-realsAreLess : Array PositionOnline -> Array PositionOnline -> Player -> Player
-realsAreLess reals fakes ({ pathBuffer } as player) =
+realsAreLess : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+realsAreLess reals fakes delta ({ pathBuffer } as player) =
     let 
+        log = Debug.log "realsAreLess" True
+    
         realsLength =
             Array.length reals
             
@@ -206,7 +199,7 @@ realsAreLess reals fakes ({ pathBuffer } as player) =
             fakesLength - realsLength
     
         newFakes = 
-            List.repeat diff getFake
+            List.repeat diff (getFake delta player)
         
         path' = 
             (List.map asPosition newFakes) 
@@ -222,11 +215,13 @@ realsAreLess reals fakes ({ pathBuffer } as player) =
                  , pathBuffer = pathBuffer' 
                  }
                 
-realsAndFakesAreSame : Array PositionOnline -> Array PositionOnline -> Player -> Player
-realsAndFakesAreSame reals fakes ({ pathBuffer } as player) = 
+realsAndFakesAreSame : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+realsAndFakesAreSame reals fakes delta ({ pathBuffer } as player) = 
     let 
+        log = Debug.log "realsAndFakesAreSame" True
+        
         fake = 
-            getFake 
+            getFake delta player
             
         path' =
             [asPosition fake] ++ (Array.toList (Array.map asPosition reals)) ++ (List.drop (Array.length fakes) player.path) 
@@ -240,9 +235,18 @@ realsAndFakesAreSame reals fakes ({ pathBuffer } as player) =
                  }
                     
                     
--- getFake position angle delta =
-getFake =
-    Fake (Visible (0, 0))
+getFake delta player =
+    let 
+        { path } = 
+            move delta player
+            
+    in 
+        case path of 
+            [] ->
+                Fake (Hidden (0, 0))
+                
+            p :: ps ->
+                Fake p 
     
 
 asPosition : PositionOnline -> Position (Float, Float)
@@ -250,6 +254,7 @@ asPosition p =
     case p of 
         Real x -> x
         Fake x -> x
+
 
 asXY : Position (Float, Float) -> (Float, Float)
 asXY p =

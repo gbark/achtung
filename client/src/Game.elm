@@ -48,9 +48,9 @@ defaultGame =
 defaultGameLight : GameLight
 defaultGameLight =
     { players = []
-    , state = Just WaitingPlayers
-    , gamearea = Just (0, 0)
-    , round = Just 0
+    , state = Nothing
+    , gamearea = Nothing
+    , round = Nothing
     , serverTime = Nothing
     }
     

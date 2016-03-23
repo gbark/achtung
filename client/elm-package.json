@@ -1,6 +1,6 @@
 {
     "version": "1.0.0",
-    "summary": "Achtung die Kurve, in Elm (with a Node multiplayer server)",
+    "summary": "Achtung die Kurve, in Elm (with a multiplayer server in NodeJS)",
     "repository": "https://github.com/gbark/achtung.git",
     "license": "BSD3",
     "source-directories": [

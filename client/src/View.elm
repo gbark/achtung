@@ -55,7 +55,7 @@ renderPlayer player =
         positions =
             map (map asXY) visibleCoords
             
-        log = Debug.log "coords" coords
+        -- log = Debug.log ("new position" ++ toString player.id) (head coords)
 
     in
         map (path >> traced lineStyle) positions

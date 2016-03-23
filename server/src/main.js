@@ -28,9 +28,9 @@ function serverUpdate() {
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
         let tmp = makeOutput(newState)
-		if (tmp.players[0]) {
-			console.log('data', JSON.stringify(tmp.players, null, 2))
-		}
+		// if (tmp.players[0]) {
+		// 	console.log('data', JSON.stringify(tmp.players, null, 2))
+		// }
         
 		io.emit('gameState', tmp)
 		store.dispatch(statePushed())
