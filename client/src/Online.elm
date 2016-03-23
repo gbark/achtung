@@ -6,7 +6,7 @@ import Game exposing (..)
 import Player exposing (..)
 import Position exposing (..)
 import Color
-import Array
+import Array exposing (Array)
 import Maybe exposing (withDefault)
 import Utils exposing (..)
 
@@ -133,10 +133,10 @@ cleanBuffer positions pathBuffer round =
 updatePathAndBuffer player =
     let 
         reals = 
-            Array.filter ((==) Real) player.pathBuffer
+            Array.filter (not << isFake) player.pathBuffer
             
-        fakes = 
-            Array.filter ((==) Fake) player.pathBuffer
+        fakes =
+            Array.filter isFake player.pathBuffer
             
     in
         if Array.isEmpty reals then
@@ -151,7 +151,8 @@ updatePathAndBuffer player =
         else 
             realsAndFakesAreSame reals fakes player
                                 
-            
+
+noReals : Array PositionOnline -> Array PositionOnline -> Player -> Player
 noReals reals fakes ({ pathBuffer } as player) =
     let 
         fake = 
@@ -161,14 +162,14 @@ noReals reals fakes ({ pathBuffer } as player) =
             [asPosition fake] ++ player.path
             
         pathBuffer' =
-            [fake] ++ fakes 
+            Array.append (Array.fromList [fake]) fakes 
             
     in
         { player | path = path' 
                  , pathBuffer = pathBuffer'
                  }
              
-    
+realsAreGreater : Array PositionOnline -> Array PositionOnline -> Player -> Player  
 realsAreGreater reals fakes ({ pathBuffer } as player) =
     let
         realsLength =
@@ -181,17 +182,18 @@ realsAreGreater reals fakes ({ pathBuffer } as player) =
             realsLength - fakesLength
             
         path' =
-            (List.map asPosition <| List.drop diff reals) ++ (List.drop fakesLength player.path)
+            (List.map asPosition <| List.drop diff (Array.toList reals)) ++ (List.drop fakesLength player.path)
             
         pathBuffer' =
-            List.take diff reals
+            Array.fromList <| List.take diff (Array.toList reals)
             
     in
         { player | path = path'
                  , pathBuffer = pathBuffer' 
                  }
                 
-                
+             
+realsAreLess : Array PositionOnline -> Array PositionOnline -> Player -> Player
 realsAreLess reals fakes ({ pathBuffer } as player) =
     let 
         realsLength =
@@ -204,33 +206,33 @@ realsAreLess reals fakes ({ pathBuffer } as player) =
             fakesLength - realsLength
     
         newFakes = 
-            List.map (\_ -> getFake) [0..diff-1] 
+            List.repeat diff getFake
         
         path' = 
             (List.map asPosition newFakes) 
-            ++ (List.map asPosition reals) 
+            ++ (Array.toList (Array.map asPosition reals)) 
             ++ (List.drop diff (List.take fakesLength player.path)) -- Correct? Before refactor: ++ (List.drop pathFakes diff) 
             ++ (List.drop fakesLength player.path)
         
         pathBuffer' =
-            newFakes ++ (Array.slice 0 -(realsLength) pathBuffer)  
+            Array.append (Array.fromList newFakes) (Array.slice 0 -(realsLength) pathBuffer)  
             
     in
         { player | path = path'
                  , pathBuffer = pathBuffer' 
                  }
                 
-                
+realsAndFakesAreSame : Array PositionOnline -> Array PositionOnline -> Player -> Player
 realsAndFakesAreSame reals fakes ({ pathBuffer } as player) = 
     let 
         fake = 
             getFake 
             
         path' =
-            [asPosition fake] ++ (List.map asPosition reals) ++ (List.drop (Array.length fakes) player.path) 
+            [asPosition fake] ++ (Array.toList (Array.map asPosition reals)) ++ (List.drop (Array.length fakes) player.path) 
             
         pathBuffer' =
-            [fake] ++ (Array.slice 0 -(Array.length reals) pathBuffer) 
+            Array.append (Array.fromList [fake]) (Array.slice 0 -(Array.length reals) pathBuffer) 
             
     in
         { player | path = path'
@@ -243,8 +245,20 @@ getFake =
     Fake (Visible (0, 0))
     
 
-
+asPosition : PositionOnline -> Position (Float, Float)
 asPosition p =
     case p of 
         Real x -> x
         Fake x -> x
+
+asXY : Position (Float, Float) -> (Float, Float)
+asXY p =
+    case p of
+        Visible (x, y) -> (x, y)
+        Hidden (x, y) -> (x, y)
+        
+
+isFake p =
+    case p of 
+        Fake _ -> True
+        Real _ -> False

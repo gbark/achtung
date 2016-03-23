@@ -17,7 +17,7 @@ import Config
 type alias Player =
     { id: String
     , path: List (Position (Float, Float))
-    , pathBuffer: Array (PositionOnline (Float, Float))
+    , pathBuffer: Array PositionOnline
     , angle: Float
     , direction: Direction
     , alive: Bool
@@ -32,7 +32,7 @@ type alias Player =
 -- Light weight Player object for sending over the wire
 type alias PlayerLight =
     { id: String
-    , pathBuffer: Array (PositionOnline (Float, Float))
+    , pathBuffer: Array PositionOnline
     , angle: Maybe Float
     , alive: Maybe Bool
     , score: Maybe Int
@@ -51,7 +51,7 @@ defaultPlayer : Player
 defaultPlayer =
     { id = "1"
     , path = []
-    , pathBuffer = (Array.fromList [])
+    , pathBuffer = Array.empty
     , angle = 0
     , direction = Straight
     , alive = True
