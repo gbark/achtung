@@ -6,6 +6,7 @@ import Char
 import Random
 import Set
 import List exposing (..)
+import Array exposing (Array)
 
 
 import Utils exposing (..)
@@ -16,7 +17,7 @@ import Config
 type alias Player =
     { id: String
     , path: List (Position (Float, Float))
-    , lastPositions: List (Position (Float, Float))
+    , pathBuffer: Array (PositionOnline (Float, Float))
     , angle: Float
     , direction: Direction
     , alive: Bool
@@ -31,7 +32,7 @@ type alias Player =
 -- Light weight Player object for sending over the wire
 type alias PlayerLight =
     { id: String
-    , lastPositions: List (Position (Float, Float))
+    , pathBuffer: Array (PositionOnline (Float, Float))
     , angle: Maybe Float
     , alive: Maybe Bool
     , score: Maybe Int
@@ -50,7 +51,7 @@ defaultPlayer : Player
 defaultPlayer =
     { id = "1"
     , path = []
-    , lastPositions = []
+    , pathBuffer = (Array.fromList [])
     , angle = 0
     , direction = Straight
     , alive = True

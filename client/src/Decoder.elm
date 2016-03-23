@@ -30,7 +30,7 @@ game =
         (maybe ("state" := string `andThen` state))
         (maybe ("gamearea" := tuple2 (,) int int))
         (maybe ("round" := int))
-        ("serverTime" := float)
+        (maybe ("serverTime" := float))
         
         
 state : String -> Decoder State
@@ -56,7 +56,7 @@ mode s =
 player : Decoder PlayerLight
 player =
     map PlayerLight ("id" := string)
-        `apply` ("lastPositions" := list position)
+        `apply` ("pathBuffer" := array positionOnline)
         `apply` (maybe ("angle" := float))
         `apply` (maybe ("alive" := bool))
         `apply` (maybe ("score" := int))
@@ -67,6 +67,10 @@ player =
 apply : Decoder (a -> b) -> Decoder a -> Decoder b
 apply func value =
     object2 (<|) func value
+    
+    
+positionOnline =
+    object1 (\p -> Real p) ("position" := position)
 
         
 position : Decoder (Position (Float, Float))

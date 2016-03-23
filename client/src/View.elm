@@ -54,6 +54,8 @@ renderPlayer player =
 
         positions =
             map (map asXY) visibleCoords
+            
+        log = Debug.log "coords" coords
 
     in
         map (path >> traced lineStyle) positions

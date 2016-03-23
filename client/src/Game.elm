@@ -20,6 +20,7 @@ type alias Game =
     , mode: Mode
     , gamearea: (Int, Int)
     , round: Int
+    , serverTime: Maybe Float
     }
 
 
@@ -29,7 +30,7 @@ type alias GameLight =
     , state: Maybe State
     , gamearea: Maybe (Int, Int)
     , round: Maybe Int
-    , serverTime: Float
+    , serverTime: Maybe Float
     }
     
 
@@ -40,6 +41,7 @@ defaultGame =
     , mode = Undecided
     , gamearea = (0, 0)
     , round = 0
+    , serverTime = Nothing
     }
     
 
@@ -49,6 +51,6 @@ defaultGameLight =
     , state = Just WaitingPlayers
     , gamearea = Just (0, 0)
     , round = Just 0
-    , serverTime = 0
+    , serverTime = Nothing
     }
     

@@ -40,7 +40,7 @@ export default function reducer(state = Map(), action) {
             let players = state.get('players')
             if (players) {
                 players = players.map(p => {
-                    return p.set('lastPositions', List())
+                    return p.set('pathBuffer', List())
                             .set('puncture', 0)
                 })
                 
