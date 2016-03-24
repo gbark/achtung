@@ -77,16 +77,16 @@ updatePlayers { server, clock } game =
                 
 
 syncPlayer : List Player -> Bool -> Float -> State -> PlayerLight -> Player
-syncPlayer players stale delta nextState playerLight =
+syncPlayer players stale delta state playerLight =
     let 
         player = 
             Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) playerLight.id) players
             
         player' =
-            syncBuffers player playerLight stale
+            syncBuffers player playerLight stale state
             
         { path, pathBuffer } =
-            if nextState == Play then
+            if state == Play then
                 updatePathAndBuffer delta player'
                 
             else
@@ -109,13 +109,17 @@ resetPlayer player =
              }
              
 
-syncBuffers player server stale =
+syncBuffers player server stale state =
     case stale of
         True ->
             player
             
         False ->
-            { player | pathBuffer = (Array.append server.pathBuffer player.pathBuffer) }
+            if state /= Play then
+                { player | pathBuffer = Array.empty }
+                
+            else 
+                { player | pathBuffer = (Array.append server.pathBuffer player.pathBuffer) }
     
     
 -- Pop real(s) from pathBuffer.
@@ -279,10 +283,10 @@ appendRealsAndPadWithFake reals fakes delta player =
                  }
                     
                     
-getFake delta angle position =
+getFake delta angle seedPosition =
     let 
         mockPlayer =
-            { defaultPlayer | path = [position]
+            { defaultPlayer | path = [seedPosition]
                             , angle = angle
                             , direction = Straight
                             }
@@ -299,7 +303,7 @@ getFake delta angle position =
                 Fake p 
 
 
-getFakes delta angle n seed =
+getFakes delta angle n seedPosition =
     List.foldl (\_ acc -> 
         case acc of 
             [] ->
@@ -308,7 +312,7 @@ getFakes delta angle n seed =
             p :: ps ->
                 (getFake delta angle (asPosition p)) :: p :: ps
                 
-    ) [seed] <| List.repeat n 0
+    ) [seedPosition] <| List.repeat n 0
 
 
 asPosition : PositionOnline -> Position (Float, Float)

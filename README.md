@@ -10,6 +10,8 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 
 ## Multiplayer Todo
 
+* Fix bug where positions from previous round are rendered
+* Fix bug where direction seems to freeze. Should always default to Straight
 * Predictively render Player
 * Render Opponents at a 100ms delay to smoothen movements
 * Introduce Game instances to server to handle multiple ongoing games
