@@ -82,12 +82,15 @@ syncPlayer players stale delta nextState playerLight =
         player = 
             Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) playerLight.id) players
             
+        player' =
+            syncBuffers player playerLight stale
+            
         { path, pathBuffer } =
-            if not stale && nextState == Play then
-                updatePathAndBuffer delta player
+            if nextState == Play then
+                updatePathAndBuffer delta player'
                 
             else
-                player
+                player'
         
     in
         { player | id = playerLight.id
@@ -104,6 +107,15 @@ resetPlayer player =
     { player | path = defaultPlayer.path
              , pathBuffer = defaultPlayer.pathBuffer
              }
+             
+
+syncBuffers player server stale =
+    case stale of
+        True ->
+            player
+            
+        False ->
+            { player | pathBuffer = (Array.append server.pathBuffer player.pathBuffer) }
     
     
 -- Pop real(s) from pathBuffer.
@@ -126,25 +138,31 @@ updatePathAndBuffer delta player =
             
     in
         if Array.isEmpty reals then
-            noReals fakes delta player
+            appendFake fakes delta player
         
         else if Array.length reals > Array.length fakes then
-            realsAreGreater reals fakes player
+            appendReals reals fakes player
             
         else if not (Array.isEmpty reals) then
-            realsAreLess reals fakes delta player
+            appendRealsAndPadWithFakes reals fakes delta player
                             
         else 
-            realsAndFakesAreSame reals fakes delta player
+            appendRealsAndPadWithFake reals fakes delta player
                                 
 
-noReals : Array PositionOnline -> Float -> Player -> Player
-noReals fakes delta ({ pathBuffer } as player) =
+-- Add one fake to path and pathBuffer
+appendFake : Array PositionOnline -> Float -> Player -> Player
+appendFake fakes delta ({ pathBuffer } as player) =
     let 
-        log = Debug.log "noReals" True
+        log = Debug.log "appendFake" True
         
         fake = 
-            getFake delta player
+            case player.path of 
+                [] -> 
+                    Fake (Hidden (0, 0))
+                
+                p :: ps ->
+                    getFake delta player.angle p
             
         path' =
             [asPosition fake] ++ player.path
@@ -153,14 +171,21 @@ noReals fakes delta ({ pathBuffer } as player) =
             Array.append (Array.fromList [fake]) fakes 
             
     in
-        { player | path = path' 
-                 , pathBuffer = pathBuffer'
-                 }
-             
-realsAreGreater : Array PositionOnline -> Array PositionOnline -> Player -> Player  
-realsAreGreater reals fakes ({ pathBuffer } as player) =
+        if List.isEmpty player.path then
+            player
+            
+        else
+            { player | path = path'
+                     , pathBuffer = pathBuffer'
+                     }
+
+-- Replace any fakes on path with reals and add one real on top. 
+-- All reals, minus one, which have no fake to replace should be saved in pathBuffer. The left
+-- over real should be added to path.
+appendReals : Array PositionOnline -> Array PositionOnline -> Player -> Player  
+appendReals reals fakes player =
     let
-        log = Debug.log "realsAreGreater" True
+        log = Debug.log "appendReals" True
         
         realsLength =
             Array.length reals
@@ -171,22 +196,26 @@ realsAreGreater reals fakes ({ pathBuffer } as player) =
         diff = 
             realsLength - fakesLength
             
-        path' =
-            (List.map asPosition <| List.drop diff (Array.toList reals)) ++ (List.drop fakesLength player.path)
+        reals' =
+            Array.toList reals
             
-        pathBuffer' =
-            Array.fromList <| List.take diff (Array.toList reals)
+        path =
+            (List.map asPosition <| List.drop (diff - 1) reals') ++ (List.drop fakesLength player.path)
+            
+        pathBuffer =
+            Array.fromList <| List.take (diff - 1) reals'
             
     in
-        { player | path = path'
-                 , pathBuffer = pathBuffer' 
+        { player | path = path
+                 , pathBuffer = pathBuffer
                  }
                 
-             
-realsAreLess : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
-realsAreLess reals fakes delta ({ pathBuffer } as player) =
+-- Replace as many fakes as possible with reals. Clear pathBuffer of replaced and generate
+-- new fakes to replace out of date fakes. 
+appendRealsAndPadWithFakes : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+appendRealsAndPadWithFakes reals fakes delta ({ pathBuffer } as player) =
     let 
-        log = Debug.log "realsAreLess" True
+        log = Debug.log "appendRealsAndPadWithFakes" True
     
         realsLength =
             Array.length reals
@@ -196,13 +225,19 @@ realsAreLess reals fakes delta ({ pathBuffer } as player) =
             
         diff = 
             fakesLength - realsLength
+            
+        seed = 
+            withDefault (Fake (Hidden (0, 0))) (List.head reals')
     
         newFakes = 
-            List.repeat diff (getFake delta player)
+            getFakes delta player.angle diff seed
+            
+        reals' =
+            Array.toList reals
         
-        path' = 
-            (List.map asPosition newFakes) 
-            ++ (Array.toList (Array.map asPosition reals)) 
+        path = 
+               (List.map asPosition newFakes) 
+            ++ (List.map asPosition reals')
             ++ (List.drop diff (List.take fakesLength player.path)) -- Correct? Before refactor: ++ (List.drop pathFakes diff) 
             ++ (List.drop fakesLength player.path)
         
@@ -210,34 +245,50 @@ realsAreLess reals fakes delta ({ pathBuffer } as player) =
             Array.append (Array.fromList newFakes) (Array.slice 0 -(realsLength) pathBuffer)  
             
     in
-        { player | path = path'
+        { player | path = path
                  , pathBuffer = pathBuffer' 
                  }
-                
-realsAndFakesAreSame : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
-realsAndFakesAreSame reals fakes delta ({ pathBuffer } as player) = 
+
+-- Replace as many fakes as possible with reals. Clear pathBuffer and generate
+-- new fakes to replace out of date fakes. Generate one fake to pad path.
+appendRealsAndPadWithFake : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+appendRealsAndPadWithFake reals fakes delta player = 
     let 
-        log = Debug.log "realsAndFakesAreSame" True
+        log = Debug.log "appendRealsAndPadWithFake" True
+        
+        reals' =
+            Array.map asPosition reals
         
         fake = 
-            getFake delta player
+            case Array.toList <| Array.slice 0 1 reals' of 
+                [] -> 
+                    Fake (Hidden (0, 0))
+                
+                p :: ps ->
+                    getFake delta player.angle p
             
         path' =
-            [asPosition fake] ++ (Array.toList (Array.map asPosition reals)) ++ (List.drop (Array.length fakes) player.path) 
+            [asPosition fake] ++ (Array.toList reals') ++ (List.drop (Array.length fakes) player.path) 
             
-        pathBuffer' =
-            Array.append (Array.fromList [fake]) (Array.slice 0 -(Array.length reals) pathBuffer) 
+        pathBuffer =
+            Array.fromList [fake] 
             
     in
         { player | path = path'
-                 , pathBuffer = pathBuffer'
+                 , pathBuffer = pathBuffer
                  }
                     
                     
-getFake delta player =
+getFake delta angle position =
     let 
+        mockPlayer =
+            { defaultPlayer | path = [position]
+                            , angle = angle
+                            , direction = Straight
+                            }
+        
         { path } = 
-            move delta player
+            move delta False mockPlayer
             
     in 
         case path of 
@@ -246,20 +297,25 @@ getFake delta player =
                 
             p :: ps ->
                 Fake p 
-    
+
+
+getFakes delta angle n seed =
+    List.foldl (\_ acc -> 
+        case acc of 
+            [] ->
+                []
+            
+            p :: ps ->
+                (getFake delta angle (asPosition p)) :: p :: ps
+                
+    ) [seed] <| List.repeat n 0
+
 
 asPosition : PositionOnline -> Position (Float, Float)
 asPosition p =
     case p of 
         Real x -> x
         Fake x -> x
-
-
-asXY : Position (Float, Float) -> (Float, Float)
-asXY p =
-    case p of
-        Visible (x, y) -> (x, y)
-        Hidden (x, y) -> (x, y)
         
 
 isFake p =

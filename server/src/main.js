@@ -27,31 +27,16 @@ let prevState = store.getState()
 function serverUpdate() {
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
-        let tmp = makeOutput(newState)
-		// if (tmp.players[0]) {
-		// 	console.log('data', JSON.stringify(tmp.players, null, 2))
-		// }
-        
-		io.emit('gameState', tmp)
+		io.emit('gameState', makeOutput(newState))
 		store.dispatch(statePushed())
 		prevState = newState
 	}
 }
 
-
 function makeOutput(state) {
-	const round = state.get('round')
-	
 	const players = state.get('players').map((v, k) => {
-		// let pathBuffer = []
-		
-		// pathBuffer = v.get('pathBuffer').map((v, k) => {
-		// 	return positionOnline(v, round)
-		// })
-		
 		return v
 			.set('id', k)
-			// .set('pathBuffer', pathBuffer)
 			.remove('path')
 			.remove('direction')
 	}).toArray()
@@ -61,14 +46,6 @@ function makeOutput(state) {
 			.set('gamearea', GAMEAREA)
 			.set('serverTime', +new Date())
 			.toJS()
-	
-}
-
-
-function positionOnline(pos, round) {
-    return {
-        position: pos
-    }
 }
 
 

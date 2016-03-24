@@ -71,7 +71,7 @@ updatePlayer delta gamearea players player =
     else
         let
             player' =
-                move delta player
+                move delta True player
 
             position =
                 Maybe.withDefault (Visible (0, 0)) (head player'.path)
@@ -126,8 +126,8 @@ collisionPaths player players =
         filter isVisible (concat [myPath, opponentsPaths])
 
 
-move : Float -> Player -> Player
-move delta player =
+move : Float -> Bool -> Player -> Player
+move delta shouldPuncture player =
     let 
         position = 
             head player.path
@@ -158,7 +158,11 @@ move delta player =
                         y + vy * (delta * Config.speed)
             
                     path' =
-                        puncture player.path <| randomHole <| truncate nextX
+                        if shouldPuncture then
+                            puncture player.path <| randomHole <| truncate nextX
+                            
+                        else
+                            player.path
             
                 in
                     { player | angle = angle
