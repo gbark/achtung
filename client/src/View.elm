@@ -90,6 +90,9 @@ sidebar game =
 
                 WaitingPlayers ->
                     "Waiting for more players to join the game"
+
+                Connecting ->
+                    "Connecting to multiplayer server..."
           ))]
         , (if game.state == Select then
                 start
@@ -103,15 +106,23 @@ sidebar game =
 scoreboard game =
     div [] [ (if length game.players > 1 then
                 h3 [] [(Html.text ("Round: " ++ toString game.round))]
-              else
+              else if game.mode == Local then 
                 h3 [] [(Html.text ("Survivor mode :-O"))]
+              else
+                h3 [] []
            )
            , ol [ style [ ("textAlign", "left") ] ]
                 (game.players
                     |> sortBy .score
                     |> reverse
                     |> map scoreboardPlayer)
-           , p  [ style [ ("color", "grey") ] ] [(Html.text "Press <space> to start")]
+           , 
+           (
+               if game.mode == Local then
+                 p  [ style [ ("color", "grey") ] ] [(Html.text "Press <space> to start")]
+               else
+                 p [] []
+           )
            ]
 
 

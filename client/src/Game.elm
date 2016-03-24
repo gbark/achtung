@@ -9,6 +9,7 @@ type State = Select
            | Play
            | Roundover
            | WaitingPlayers
+           | Connecting
 
 
 type Mode = Undecided | Local | Online
@@ -48,7 +49,7 @@ defaultGame =
 defaultGameLight : GameLight
 defaultGameLight =
     { players = []
-    , state = Nothing
+    , state = Just Connecting
     , gamearea = Nothing
     , round = Nothing
     , serverTime = Nothing

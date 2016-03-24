@@ -93,6 +93,9 @@ updateState {keys} {players, state} =
         WaitingPlayers ->
             Select
 
+        Connecting ->
+            Select
+
 
 updatePlayers : Input -> Game -> State -> List Player
 updatePlayers {keys, clock, gamearea} {players, state} nextState =
@@ -146,11 +149,18 @@ updatePlayers {keys, clock, gamearea} {players, state} nextState =
                 WaitingPlayers ->
                     map (updatePlayer clock.delta gamearea players)
                     (mapInputs players keys)
+                        
+                Connecting ->
+                    map (updatePlayer clock.delta gamearea players)
+                    (mapInputs players keys)
 
         Roundover ->
             players
 
         WaitingPlayers ->
+            players
+
+        Connecting ->
             players
 
 

@@ -36,8 +36,8 @@ update ({keys, gamearea, clock, server, serverId} as input) ({players, state, ro
     -- in
     { game | players = updatePlayers input game
            , gamearea = withDefault gamearea server.gamearea 
-           , state = withDefault state server.state 
-           , round = withDefault round server.round 
+           , state = withDefault state server.state
+           , round = withDefault round server.round
            , serverTime = server.serverTime
     }
 
@@ -45,7 +45,6 @@ update ({keys, gamearea, clock, server, serverId} as input) ({players, state, ro
 updatePlayers : Input -> Game -> List Player
 updatePlayers { server, clock } game =
     let 
-        log2 = Debug.log "server.state" server.state
         nextState =
             case server.state of
                 Just state -> 

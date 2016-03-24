@@ -20,6 +20,7 @@ fromResult result =
             value
         
         Err msg ->
+            -- let log = Debug.log "err" msg in
             defaultGameLight
 
 
@@ -41,6 +42,7 @@ state s =
         "Play" -> succeed Game.Play
         "Roundover" -> succeed Game.Roundover
         "WaitingPlayers" -> succeed Game.WaitingPlayers
+        "Connecting" -> succeed Game.Connecting
         _ -> fail (s ++ " is not a State")
         
         
@@ -68,25 +70,21 @@ apply : Decoder (a -> b) -> Decoder a -> Decoder b
 apply func value =
     object2 (<|) func value
     
-    
-positionOnline =
-    object1 (\p -> Real p) ("position" := position)
-
         
-position : Decoder (Position (Float, Float))
-position =
+positionOnline : Decoder PositionOnline
+positionOnline =
     ("visible" := bool) `andThen` visibility
     
             
-visibility : Bool -> Decoder (Position (Float, Float))
+visibility : Bool -> Decoder PositionOnline
 visibility visible =
     if visible then
-        object2 (\x y -> Visible (x, y))
+        object2 (\x y -> Real (Visible (x, y)))
             ("x" := float)
             ("y" := float)
                 
     else
-        object2 (\x y -> Hidden (x, y))
+        object2 (\x y -> Real (Hidden (x, y)))
             ("x" := float)
             ("y" := float)
             
