@@ -96,6 +96,12 @@ updateState {keys} {players, state} =
         Connecting ->
             Select
 
+        Cooldown ->
+            Select
+
+        CooldownOver ->
+            Select
+
 
 updatePlayers : Input -> Game -> State -> List Player
 updatePlayers {keys, clock, gamearea} {players, state} nextState =
@@ -153,6 +159,14 @@ updatePlayers {keys, clock, gamearea} {players, state} nextState =
                 Connecting ->
                     map (updatePlayer clock.delta gamearea players)
                     (mapInputs players keys)
+                        
+                Cooldown ->
+                    map (updatePlayer clock.delta gamearea players)
+                    (mapInputs players keys)
+                        
+                CooldownOver ->
+                    map (updatePlayer clock.delta gamearea players)
+                    (mapInputs players keys)
 
         Roundover ->
             players
@@ -161,6 +175,12 @@ updatePlayers {keys, clock, gamearea} {players, state} nextState =
             players
 
         Connecting ->
+            players
+
+        Cooldown ->
+            players
+
+        CooldownOver ->
             players
 
 
