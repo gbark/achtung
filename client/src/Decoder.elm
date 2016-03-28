@@ -43,6 +43,8 @@ state s =
         "Roundover" -> succeed Game.Roundover
         "WaitingPlayers" -> succeed Game.WaitingPlayers
         "Connecting" -> succeed Game.Connecting
+        "Cooldown" -> succeed Game.Cooldown
+        "CooldownOver" -> succeed Game.CooldownOver
         _ -> fail (s ++ " is not a State")
         
         

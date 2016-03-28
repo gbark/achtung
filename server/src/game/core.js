@@ -32,7 +32,7 @@ export function update(delta, gamearea, game = Map()) {
 		  
 		  nextRound = updateRound(game.get('state'), nextState, game.get('round'))	
     
-	
+    
 	return game.set('state', nextState)
 			   .set('players', nextPlayers)
 			   .set('round', nextRound)
@@ -42,6 +42,8 @@ export function update(delta, gamearea, game = Map()) {
 export const STATE_WAITING_PLAYERS = 'WaitingPlayers' 
 export const STATE_PLAY = 'Play'
 export const STATE_ROUNDOVER = 'Roundover'
+export const STATE_COOLDOWN = 'Cooldown'
+export const STATE_COOLDOWN_OVER = 'CooldownOver'
 
 
 function updateState(players, state = STATE_WAITING_PLAYERS) {
@@ -72,10 +74,18 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
 			return state
 			
         case STATE_ROUNDOVER:
-			// Set to PLAY straight away
-			// MAY implement a short wait period
-			// in between rounds
+            return STATE_COOLDOWN
             
+            
+        case STATE_COOLDOWN:
+            if (enoughPlayers(players)) {
+				return STATE_COOLDOWN
+			}
+            
+			return STATE_WAITING_PLAYERS
+            
+            
+        case STATE_COOLDOWN_OVER:
             if (enoughPlayers(players)) {
                 console.log('Starting new round!')
 				return STATE_PLAY
@@ -102,7 +112,7 @@ function updatePlayers(delta, gamearea, state, nextState, players = Map()) {
                     return updatePlayer(delta, gamearea, opponents, player)
                 })
                 
-            } else if (state === STATE_ROUNDOVER) {
+            } else {
                 
                 return players.map((player, id) => {
                     const opponents = players.delete(id)
@@ -110,13 +120,21 @@ function updatePlayers(delta, gamearea, state, nextState, players = Map()) {
                     return initPlayer(gamearea, nextPlayer)
                 })
                 
-            } else {
-                return players
             }
             
 			
 			
         case STATE_ROUNDOVER:
+			return players
+            
+			
+			
+        case STATE_COOLDOWN:
+			return players
+            
+			
+			
+        case STATE_COOLDOWN_OVER:
 			return players
 		
 	}

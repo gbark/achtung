@@ -10,6 +10,8 @@ type State = Select
            | Roundover
            | WaitingPlayers
            | Connecting
+           | Cooldown
+           | CooldownOver
 
 
 type Mode = Undecided | Local | Online

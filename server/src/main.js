@@ -1,6 +1,7 @@
 import startServer from './server'
 import makeStore from './store'
-import {update, statePushed} from './game/action_creators'
+import {update, clearBuffer, endCooldown} from './game/action_creators'
+import {STATE_COOLDOWN} from './game/core'
 
 
 const store = makeStore()
@@ -8,6 +9,7 @@ const io = startServer(store)
 
 
 const GAMEAREA = [500, 500]
+const COOLDOWN_TIME = 1500
 
 
 // calculate physics and game state. loop at same interval as clients
@@ -28,7 +30,7 @@ function serverUpdate() {
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
 		io.emit('gameState', makeOutput(newState))
-		store.dispatch(statePushed())
+		store.dispatch(clearBuffer())
 		prevState = newState
 	}
 }
@@ -49,5 +51,22 @@ function makeOutput(state) {
 }
 
 
+let countdown = null
+function startNewRoundCountdown() {
+    if (countdown === null) {
+        const state = store.getState()
+        
+        if (state.get('state') === STATE_COOLDOWN) {
+            countdown = setTimeout(() => {
+                store.dispatch(endCooldown())
+                countdown = null
+            }, COOLDOWN_TIME)
+        }
+    }
+}
+
+store.subscribe(startNewRoundCountdown)
+
+
 setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
-setInterval(serverUpdate, 45)
+setInterval(serverUpdate, 95)

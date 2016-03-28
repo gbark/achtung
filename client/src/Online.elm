@@ -57,11 +57,11 @@ updatePlayers { server, clock } game =
             game.state
         
         stale = 
-            game.serverTime == server.serverTime
+            isStale game.serverTime server.serverTime
                     
     in
         if nextState == Play then
-            if state == Roundover || state == WaitingPlayers then
+            if state == Roundover || state == WaitingPlayers || state == Cooldown || state == CooldownOver then
                 let 
                     players' = 
                         List.map resetPlayer game.players 
@@ -74,6 +74,24 @@ updatePlayers { server, clock } game =
             
         else 
             List.map (syncPlayer game.players stale clock.delta nextState) server.players
+         
+         
+isStale lastTime serverTime = 
+    case serverTime of
+        Nothing ->
+            True
+            
+        Just st ->
+            case lastTime of 
+                Nothing ->
+                    False
+                    
+                Just lt -> 
+                    if st > lt then
+                        False
+                        
+                    else
+                        True
                 
 
 syncPlayer : List Player -> Bool -> Float -> State -> PlayerLight -> Player
@@ -119,7 +137,7 @@ syncBuffers player server stale state =
                 { player | pathBuffer = Array.empty }
                 
             else 
-                { player | pathBuffer = (Array.append server.pathBuffer player.pathBuffer) }
+                { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
     
     
 -- Pop real(s) from pathBuffer.

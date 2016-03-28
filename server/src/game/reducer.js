@@ -4,13 +4,15 @@ import {STATE_WAITING_PLAYERS
 	   , STATE_PLAY
 	   , STATE_ROUNDOVER
 	   , DEFAULT_PLAYER
-	   , update } from './core'
+	   , update
+       , STATE_COOLDOWN_OVER } from './core'
 
 import { UPDATE
 	   , ADD_PLAYER
 	   , REMOVE_PLAYER
 	   , SET_DIRECTION
-       , STATE_PUSHED } from './action_creators'
+       , CLEAR_BUFFER
+       , END_COOLDOWN } from './action_creators'
 
 export default function reducer(state = Map(), action) {
     switch(action.type) {
@@ -36,7 +38,7 @@ export default function reducer(state = Map(), action) {
             
             return state
             
-        case STATE_PUSHED:
+        case CLEAR_BUFFER:
             let players = state.get('players')
             if (players) {
                 players = players.map(p => {
@@ -48,6 +50,9 @@ export default function reducer(state = Map(), action) {
             }
             
             return state
+            
+        case END_COOLDOWN:
+            return state.set('state', STATE_COOLDOWN_OVER)
             
         default:
             return state

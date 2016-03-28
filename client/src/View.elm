@@ -93,6 +93,12 @@ sidebar game =
 
                 Connecting ->
                     "Connecting to multiplayer server..."
+
+                Cooldown ->
+                    "Next round coming up!"
+
+                CooldownOver ->
+                    "Next round coming up!"
           ))]
         , (if game.state == Select then
                 start
