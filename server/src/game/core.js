@@ -328,6 +328,7 @@ function initPlayer(gamearea, player) {
     return player.set('angle', angle)
                  .set('path', path)
                  .set('pathBuffer', path)
+                 .set('direction', STRAIGHT)
                  .set('alive', true)
 }
 
