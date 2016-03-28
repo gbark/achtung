@@ -69,4 +69,4 @@ store.subscribe(startNewRoundCountdown)
 
 
 setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
-setInterval(serverUpdate, 95)
+setInterval(serverUpdate, 45)
