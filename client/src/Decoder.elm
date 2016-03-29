@@ -81,12 +81,12 @@ positionOnline =
 visibility : Bool -> Decoder PositionOnline
 visibility visible =
     if visible then
-        object2 (\x y -> Real (Visible (x, y)))
+        object2 (\x y -> Actual (Visible (x, y)))
             ("x" := float)
             ("y" := float)
                 
     else
-        object2 (\x y -> Real (Hidden (x, y)))
+        object2 (\x y -> Actual (Hidden (x, y)))
             ("x" := float)
             ("y" := float)
             

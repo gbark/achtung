@@ -6,4 +6,4 @@ module Position where
 type Position a = Visible (Float, Float) | Hidden (Float, Float)
 
 
-type PositionOnline = Fake (Position (Float, Float)) | Real (Position (Float, Float))
+type PositionOnline = Prediction (Position (Float, Float)) | Actual (Position (Float, Float))

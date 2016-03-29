@@ -60,17 +60,13 @@ updatePlayers { server, clock } game =
             isStale game.serverTime server.serverTime
                     
     in
-        if nextState == Play then
-            if state == Roundover || state == WaitingPlayers || state == Cooldown || state == CooldownOver then
-                let 
-                    players' = 
-                        List.map resetPlayer game.players 
-                        
-                in
-                    List.map (syncPlayer players' stale clock.delta nextState) server.players
-            
-            else
-                List.map (syncPlayer game.players stale clock.delta nextState) server.players
+        if nextState == Play && state /= Play then
+            let 
+                players' = 
+                    List.map resetPlayer game.players 
+                    
+            in
+                List.map (syncPlayer players' stale clock.delta nextState) server.players
             
         else 
             List.map (syncPlayer game.players stale clock.delta nextState) server.players
@@ -140,57 +136,47 @@ syncBuffers player server stale state =
                 { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
     
     
--- Pop real(s) from pathBuffer.
--- If no real(s) found, create a fake. 
--- If fake was created, push to front of path and pathBuffer. 
--- == End of fake tree ==
--- If real(s) found, then find the oldest fake(s) in path and replace with real(s). 
---      (( If we have more real(s) than fakes+1, then dont push them to path, but push them to pathBuffer. ))
--- For each fake replaced, pop one from pathBuffer.
--- If no fake needs to be replaced, push real to front.
--- If positions were replaced, then push one fake. 
--- Always need to return path with +1 length
 updatePathAndBuffer delta player =
     let 
-        reals = 
-            Array.filter (not << isFake) player.pathBuffer
+        actuals = 
+            Array.filter (not << isPrediction) player.pathBuffer
             
-        fakes =
-            Array.filter isFake player.pathBuffer
+        predictions =
+            Array.filter isPrediction player.pathBuffer
             
     in
-        if Array.isEmpty reals then
-            appendFake fakes delta player
+        if Array.isEmpty actuals then
+            appendPrediction predictions delta player
         
-        else if Array.length reals > Array.length fakes then
-            appendReals reals fakes player
+        else if Array.length actuals > Array.length predictions then
+            appendActuals actuals predictions player
             
-        else if not (Array.isEmpty reals) then
-            appendRealsAndPadWithFakes reals fakes delta player
+        else if not (Array.isEmpty actuals) then
+            appendActualsAndPadWithPredictions actuals predictions delta player
                             
         else 
-            appendRealsAndPadWithFake reals fakes delta player
+            appendActualsAndPadWithPrediction actuals predictions delta player
                                 
 
--- Add one fake to path and pathBuffer
-appendFake : Array PositionOnline -> Float -> Player -> Player
-appendFake fakes delta ({ pathBuffer } as player) =
+-- Add one prediction to path and pathBuffer
+appendPrediction : Array PositionOnline -> Float -> Player -> Player
+appendPrediction predictions delta ({ pathBuffer } as player) =
     let 
-        log = Debug.log "appendFake" True
+        log = Debug.log "appendPrediction" True
         
-        fake = 
+        prediction = 
             case player.path of 
                 [] -> 
-                    Fake (Hidden (0, 0))
+                    Prediction (Hidden (0, 0))
                 
                 p :: ps ->
-                    getFake delta player.angle p
+                    generatePrediction delta player.angle p
             
         path' =
-            [asPosition fake] ++ player.path
+            [asPosition prediction] ++ player.path
             
         pathBuffer' =
-            Array.append (Array.fromList [fake]) fakes 
+            Array.append (Array.fromList [prediction]) predictions 
             
     in
         if List.isEmpty player.path then
@@ -201,99 +187,99 @@ appendFake fakes delta ({ pathBuffer } as player) =
                      , pathBuffer = pathBuffer'
                      }
 
--- Replace any fakes on path with reals and add one real on top. 
--- All reals, minus one, which have no fake to replace should be saved in pathBuffer. The left
--- over real should be added to path.
-appendReals : Array PositionOnline -> Array PositionOnline -> Player -> Player  
-appendReals reals fakes player =
+-- Replace any predictions on path with actual positions and add an actual position on top. 
+-- All actual positions, minus one, which have no prediction to replace should be saved in pathBuffer. The left
+-- over actual position should be added to path.
+appendActuals : Array PositionOnline -> Array PositionOnline -> Player -> Player  
+appendActuals actuals predictions player =
     let
-        log = Debug.log "appendReals" True
+        log = Debug.log "appendActuals" True
         
-        realsLength =
-            Array.length reals
+        actualsLength =
+            Array.length actuals
             
-        fakesLength =
-            Array.length fakes
+        predictionsLength =
+            Array.length predictions
             
         diff = 
-            realsLength - fakesLength
+            actualsLength - predictionsLength
             
-        reals' =
-            Array.toList reals
+        actuals' =
+            Array.toList actuals
             
         path =
-            (List.map asPosition <| List.drop (diff - 1) reals') ++ (List.drop fakesLength player.path)
+            (List.map asPosition <| List.drop (diff - 1) actuals') ++ (List.drop predictionsLength player.path)
             
         pathBuffer =
-            Array.fromList <| List.take (diff - 1) reals'
+            Array.fromList <| List.take (diff - 1) actuals'
             
     in
         { player | path = path
                  , pathBuffer = pathBuffer
                  }
                 
--- Replace as many fakes as possible with reals. Clear pathBuffer of replaced and generate
--- new fakes to replace out of date fakes. 
-appendRealsAndPadWithFakes : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
-appendRealsAndPadWithFakes reals fakes delta ({ pathBuffer } as player) =
+-- Replace as many predictions as possible with actual positions. Clear pathBuffer of replaced and generate
+-- new predictions to replace out of date predictions. 
+appendActualsAndPadWithPredictions : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+appendActualsAndPadWithPredictions actuals predictions delta ({ pathBuffer } as player) =
     let 
-        log = Debug.log "appendRealsAndPadWithFakes" True
+        log = Debug.log "appendActualsAndPadWithPredictions" True
     
-        realsLength =
-            Array.length reals
+        actualsLength =
+            Array.length actuals
             
-        fakesLength =
-            Array.length fakes
+        predictionsLength =
+            Array.length predictions
             
         diff = 
-            fakesLength - realsLength
+            predictionsLength - actualsLength
             
         seed = 
-            withDefault (Fake (Hidden (0, 0))) (List.head reals')
+            withDefault (Prediction (Hidden (0, 0))) (List.head actuals')
     
-        newFakes = 
-            getFakes delta player.angle diff seed
+        newPredictions = 
+            generatePredictions delta player.angle diff seed
             
-        reals' =
-            Array.toList reals
+        actuals' =
+            Array.toList actuals
         
         path = 
-               (List.map asPosition newFakes) 
-            ++ (List.map asPosition reals')
-            ++ (List.drop diff (List.take fakesLength player.path)) -- Correct? Before refactor: ++ (List.drop pathFakes diff) 
-            ++ (List.drop fakesLength player.path)
+               (List.map asPosition newPredictions) 
+            ++ (List.map asPosition actuals')
+            ++ (List.drop diff (List.take predictionsLength player.path)) 
+            ++ (List.drop predictionsLength player.path)
         
         pathBuffer' =
-            Array.append (Array.fromList newFakes) (Array.slice 0 -(realsLength) pathBuffer)  
+            Array.append (Array.fromList newPredictions) (Array.slice 0 -(actualsLength) pathBuffer)  
             
     in
         { player | path = path
                  , pathBuffer = pathBuffer' 
                  }
 
--- Replace as many fakes as possible with reals. Clear pathBuffer and generate
--- new fakes to replace out of date fakes. Generate one fake to pad path.
-appendRealsAndPadWithFake : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
-appendRealsAndPadWithFake reals fakes delta player = 
+-- Replace as many predictions as possible with actual positions. Clear pathBuffer and generate
+-- new predictions to replace out of date predictions. Generate one prediction to pad path.
+appendActualsAndPadWithPrediction : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+appendActualsAndPadWithPrediction actuals predictions delta player = 
     let 
-        log = Debug.log "appendRealsAndPadWithFake" True
+        log = Debug.log "appendActualsAndPadWithPrediction" True
         
-        reals' =
-            Array.map asPosition reals
+        actuals' =
+            Array.map asPosition actuals
         
-        fake = 
-            case Array.toList <| Array.slice 0 1 reals' of 
+        prediction = 
+            case Array.toList <| Array.slice 0 1 actuals' of 
                 [] -> 
-                    Fake (Hidden (0, 0))
+                    Prediction (Hidden (0, 0))
                 
                 p :: ps ->
-                    getFake delta player.angle p
+                    generatePrediction delta player.angle p
             
         path' =
-            [asPosition fake] ++ (Array.toList reals') ++ (List.drop (Array.length fakes) player.path) 
+            [asPosition prediction] ++ (Array.toList actuals') ++ (List.drop (Array.length predictions) player.path) 
             
         pathBuffer =
-            Array.fromList [fake] 
+            Array.fromList [prediction] 
             
     in
         { player | path = path'
@@ -301,7 +287,7 @@ appendRealsAndPadWithFake reals fakes delta player =
                  }
                     
                     
-getFake delta angle seedPosition =
+generatePrediction delta angle seedPosition =
     let 
         mockPlayer =
             { defaultPlayer | path = [seedPosition]
@@ -315,20 +301,20 @@ getFake delta angle seedPosition =
     in 
         case path of 
             [] ->
-                Fake (Hidden (0, 0))
+                Prediction (Hidden (0, 0))
                 
             p :: ps ->
-                Fake p 
+                Prediction p 
 
 
-getFakes delta angle n seedPosition =
+generatePredictions delta angle n seedPosition =
     List.foldl (\_ acc -> 
         case acc of 
             [] ->
                 []
             
             p :: ps ->
-                (getFake delta angle (asPosition p)) :: p :: ps
+                (generatePrediction delta angle (asPosition p)) :: p :: ps
                 
     ) [seedPosition] <| List.repeat n 0
 
@@ -336,11 +322,11 @@ getFakes delta angle n seedPosition =
 asPosition : PositionOnline -> Position (Float, Float)
 asPosition p =
     case p of 
-        Real x -> x
-        Fake x -> x
+        Actual x -> x
+        Prediction x -> x
         
 
-isFake p =
+isPrediction p =
     case p of 
-        Fake _ -> True
-        Real _ -> False
+        Prediction _ -> True
+        Actual _ -> False
