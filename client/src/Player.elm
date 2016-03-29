@@ -293,8 +293,8 @@ hitWall position (w, h) =
                 False
 
 
-mapInput : Player -> Set.Set Char.KeyCode -> Player
-mapInput player keys =
+mapInput : Set.Set Char.KeyCode -> Player -> Player
+mapInput keys player =
     let direction =
         toDirection keys player
 

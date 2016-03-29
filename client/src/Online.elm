@@ -12,73 +12,115 @@ import Utils exposing (..)
 
 
 update : Input -> Game -> Game
-update ({keys, gamearea, clock, server, serverId} as input) ({players, state, round} as game) =
-    -- let 
-        -- playerId =
-        --     Maybe.withDefault "id-missing" serverId
-    
-        -- player = 
-        --     List.head <| List.filter (.id >> (==) playerId) server.players
-
-        -- player' = 
-        --     syncPlayer players player
-
-        -- player'' = 
-        --     updatePlayer clock.delta gamearea [player] <| mapInput player' keys
+update ({ gamearea, clock, server, serverId, keys } as input) game =
+    case serverId of
+        Nothing ->
+            game
             
-        -- opponents =
-        --     -- server.players 
-        --     List.filter (.id >> (/=) playerId) server.players
-            
-        -- opponents' =
-        --     List.map (syncPlayer players) opponents
-    
-    -- in
-    { game | players = updatePlayers input game
-           , gamearea = withDefault gamearea server.gamearea 
-           , state = withDefault state server.state
-           , round = withDefault round server.round
-           , serverTime = server.serverTime
-           }
-
-
-updatePlayers : Input -> Game -> List Player
-updatePlayers { server, clock } game =
-    let 
-        nextState =
-            case server.state of
-                Just state -> 
-                    state
-                
-                Nothing ->
-                    game.state
-                    
-        state = 
-            game.state
-        
-        stale = 
-            isStale game.serverTime server.serverTime
-                    
-    in
-        if nextState == Play && state /= Play then
+        Just id ->
             let 
-                players' = 
-                    List.map resetPlayer game.players 
+                nextState =
+                    case server.state of
+                        Just serverState -> 
+                            serverState
+                        
+                        Nothing ->
+                            game.state
+                            
+                stale = 
+                    isStale game.serverTime server.serverTime
+                            
+                (localPlayer, localOpponents) = 
+                    List.partition (.id >> (==) id) game.players
+                            
+                (serverPlayer, serverOpponents) = 
+                    List.partition (.id >> (==) id) server.players
+                    
+                player =
+                    case List.head serverPlayer of
+                        Nothing ->
+                            []
+                            
+                        Just serverPlayer' ->
+                            [updateSelf game.state nextState clock.delta stale keys (List.head localPlayer) serverPlayer']
+                    
+                opponents =
+                    updateOpponents game.state nextState clock.delta stale localOpponents serverOpponents
                     
             in
-                List.map (syncPlayer stale clock.delta nextState players') server.players
+                { game | players = player ++ opponents
+                       , state = nextState
+                       , gamearea = withDefault gamearea server.gamearea 
+                       , round = withDefault game.round server.round
+                       , serverTime = server.serverTime
+                       }
+           
+           
+updateSelf state nextState delta stale keys localPlayer serverPlayer =
+    let 
+        localPlayer' = 
+            Maybe.withDefault defaultPlayer localPlayer
             
-        else 
-            List.map (syncPlayer stale clock.delta nextState game.players) server.players
+        localPlayer'' = 
+            case nextState == Play && state /= Play of
+                True ->
+                    resetPlayer localPlayer' 
+                
+                False ->
+                    localPlayer'
+    
+    in
+        if nextState == Play then
+            syncSelf stale delta nextState localPlayer'' serverPlayer
+                |> mapInput keys
+                |> move delta False
+                
+        else
+            syncSelf stale delta nextState localPlayer'' serverPlayer
+
+
+syncSelf : Bool -> Float -> State -> Player -> PlayerLight -> Player
+syncSelf stale delta nextState localPlayer serverPlayer =
+    let 
+        path =
+            case localPlayer.path of
+                [] ->
+                    Array.toList <| Array.map asPosition serverPlayer.pathBuffer
+                
+                x :: xs ->
+                    localPlayer.path
+        
+    in
+        { localPlayer | id = serverPlayer.id
+                      , path = path
+                      , angle = withDefault localPlayer.angle serverPlayer.angle 
+                      , alive = withDefault localPlayer.alive serverPlayer.alive
+                      , score = withDefault localPlayer.score serverPlayer.score
+                      , color = withDefault localPlayer.color serverPlayer.color 
+                      }
+
+
+updateOpponents state nextState delta stale localOpponents serverOpponents =
+    let 
+        localOpponents' = 
+            case nextState == Play && state /= Play of
+                True ->
+                    List.map resetPlayer localOpponents 
+                
+                False ->
+                    localOpponents
+    
+    in
+        List.map (syncOpponents stale delta nextState localOpponents') serverOpponents
          
          
-isStale lastTime serverTime = 
+isStale previousServerTime serverTime = 
     case serverTime of
         Nothing ->
             True
             
         Just st ->
-            case lastTime of 
+            case previousServerTime of 
                 Nothing ->
                     False
                     
@@ -90,31 +132,31 @@ isStale lastTime serverTime =
                         True
                 
 
-syncPlayer : Bool -> Float -> State -> List Player -> PlayerLight -> Player
-syncPlayer stale delta state players playerLight =
+syncOpponents : Bool -> Float -> State -> List Player -> PlayerLight -> Player
+syncOpponents stale delta nextState localOpponents serverOpponent =
     let 
-        player = 
-            Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) playerLight.id) players
+        localOpponent = 
+            Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) serverOpponent.id) localOpponents
             
-        player' =
-            syncBuffers player playerLight stale
+        localOpponent' =
+            syncBuffers localOpponent serverOpponent stale
             
         { path, pathBuffer } =
-            if state == Play then
-                updatePathAndBuffer delta player'
+            if nextState == Play then
+                updatePathAndBuffer delta localOpponent'
                 
             else
-                player'
+                localOpponent'
         
     in
-        { player | id = playerLight.id
-                 , path = path
-                 , angle = withDefault player.angle playerLight.angle
-                 , alive = withDefault player.alive playerLight.alive
-                 , score = withDefault player.score playerLight.score
-                 , color = withDefault player.color playerLight.color 
-                 , pathBuffer = pathBuffer
-                 }
+        { localOpponent | id = serverOpponent.id
+                        , path = path
+                        , angle = withDefault localOpponent.angle serverOpponent.angle
+                        , alive = withDefault localOpponent.alive serverOpponent.alive
+                        , score = withDefault localOpponent.score serverOpponent.score
+                        , color = withDefault localOpponent.color serverOpponent.color 
+                        , pathBuffer = pathBuffer
+                        }
 
 
 resetPlayer player =
@@ -160,7 +202,7 @@ updatePathAndBuffer delta player =
 appendPrediction : Array PositionOnline -> Float -> Player -> Player
 appendPrediction predictions delta ({ pathBuffer } as player) =
     let 
-        log = Debug.log "appendPrediction" True
+        -- log = Debug.log "appendPrediction" True
         
         prediction = 
             case player.path of 
@@ -191,7 +233,7 @@ appendPrediction predictions delta ({ pathBuffer } as player) =
 appendActuals : Array PositionOnline -> Array PositionOnline -> Player -> Player  
 appendActuals actuals predictions player =
     let
-        log = Debug.log "appendActuals" True
+        -- log = Debug.log "appendActuals" True
         
         actualsLength =
             Array.length actuals
@@ -221,7 +263,7 @@ appendActuals actuals predictions player =
 appendActualsAndPadWithPredictions : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
 appendActualsAndPadWithPredictions actuals predictions delta ({ pathBuffer } as player) =
     let 
-        log = Debug.log "appendActualsAndPadWithPredictions" True
+        -- log = Debug.log "appendActualsAndPadWithPredictions" True
     
         actualsLength =
             Array.length actuals
@@ -260,7 +302,7 @@ appendActualsAndPadWithPredictions actuals predictions delta ({ pathBuffer } as 
 appendActualsAndPadWithPrediction : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
 appendActualsAndPadWithPrediction actuals predictions delta player = 
     let 
-        log = Debug.log "appendActualsAndPadWithPrediction" True
+        -- log = Debug.log "appendActualsAndPadWithPrediction" True
         
         actuals' =
             Array.map asPosition actuals
