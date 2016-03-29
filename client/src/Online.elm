@@ -39,7 +39,7 @@ update ({keys, gamearea, clock, server, serverId} as input) ({players, state, ro
            , state = withDefault state server.state
            , round = withDefault round server.round
            , serverTime = server.serverTime
-    }
+           }
 
 
 updatePlayers : Input -> Game -> List Player
@@ -66,10 +66,10 @@ updatePlayers { server, clock } game =
                     List.map resetPlayer game.players 
                     
             in
-                List.map (syncPlayer players' stale clock.delta nextState) server.players
+                List.map (syncPlayer stale clock.delta nextState players') server.players
             
         else 
-            List.map (syncPlayer game.players stale clock.delta nextState) server.players
+            List.map (syncPlayer stale clock.delta nextState game.players) server.players
          
          
 isStale lastTime serverTime = 
@@ -90,14 +90,14 @@ isStale lastTime serverTime =
                         True
                 
 
-syncPlayer : List Player -> Bool -> Float -> State -> PlayerLight -> Player
-syncPlayer players stale delta state playerLight =
+syncPlayer : Bool -> Float -> State -> List Player -> PlayerLight -> Player
+syncPlayer stale delta state players playerLight =
     let 
         player = 
             Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) playerLight.id) players
             
         player' =
-            syncBuffers player playerLight stale state
+            syncBuffers player playerLight stale
             
         { path, pathBuffer } =
             if state == Play then
@@ -120,20 +120,18 @@ syncPlayer players stale delta state playerLight =
 resetPlayer player =
     { player | path = defaultPlayer.path
              , pathBuffer = defaultPlayer.pathBuffer
+             , angle = defaultPlayer.angle
+             , direction = defaultPlayer.direction
              }
              
 
-syncBuffers player server stale state =
+syncBuffers player server stale =
     case stale of
         True ->
             player
             
         False ->
-            if state /= Play then
-                { player | pathBuffer = Array.empty }
-                
-            else 
-                { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
+            { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
     
     
 updatePathAndBuffer delta player =
