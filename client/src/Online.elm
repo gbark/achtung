@@ -42,7 +42,7 @@ update ({ gamearea, clock, server, serverId, keys } as input) game =
                             []
                             
                         Just serverPlayer' ->
-                            [updateSelf game.state nextState clock.delta stale keys (List.head localPlayer) serverPlayer']
+                            [updateSelf game.state nextState clock.delta keys (List.head localPlayer) serverPlayer']
                     
                 opponents =
                     updateOpponents game.state nextState clock.delta stale localOpponents serverOpponents
@@ -56,7 +56,7 @@ update ({ gamearea, clock, server, serverId, keys } as input) game =
                        }
            
            
-updateSelf state nextState delta stale keys localPlayer serverPlayer =
+updateSelf state nextState delta keys localPlayer serverPlayer =
     let 
         localPlayer' = 
             Maybe.withDefault defaultPlayer localPlayer
@@ -71,16 +71,16 @@ updateSelf state nextState delta stale keys localPlayer serverPlayer =
     
     in
         if nextState == Play then
-            syncSelf stale delta nextState localPlayer'' serverPlayer
+            syncSelf localPlayer'' serverPlayer
                 |> mapInput keys
                 |> move delta False
                 
         else
-            syncSelf stale delta nextState localPlayer'' serverPlayer
+            syncSelf localPlayer'' serverPlayer
 
 
-syncSelf : Bool -> Float -> State -> Player -> PlayerLight -> Player
-syncSelf stale delta nextState localPlayer serverPlayer =
+syncSelf : Player -> PlayerLight -> Player
+syncSelf localPlayer serverPlayer =
     let 
         path =
             case localPlayer.path of
