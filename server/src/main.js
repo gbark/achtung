@@ -1,11 +1,12 @@
 import startServer from './server'
 import makeStore from './store'
-import {update, clearBuffer, endCooldown} from './game/action_creators'
-import {STATE_COOLDOWN} from './game/core'
+import { update, clearBuffer, endCooldown } from './game/action_creators'
+import { STATE_COOLDOWN, STATE_PLAY } from './game/core'
 
 
 const store = makeStore()
 const io = startServer(store)
+let prevState = store.getState()
 
 
 const GAMEAREA = [500, 500]
@@ -25,14 +26,21 @@ function physicsUpdate() {
 
 
 // push state to clients. loop at 45ms interval
-let prevState = store.getState()
+let updating = false
 function serverUpdate() {
+	if (updating) {
+		return
+	}
+	updating = true
+	
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
 		io.emit('gameState', makeOutput(newState))
 		store.dispatch(clearBuffer())
 		prevState = newState
 	}
+	
+	updating = false
 }
 
 function makeOutput(state) {
@@ -52,10 +60,8 @@ function makeOutput(state) {
 
 
 let countdown = null
-function startNewRoundCountdown() {
+function startNewRoundCountdown(state) {
     if (countdown === null) {
-        const state = store.getState()
-        
         if (state.get('state') === STATE_COOLDOWN) {
             countdown = setTimeout(() => {
                 store.dispatch(endCooldown())
@@ -65,7 +71,20 @@ function startNewRoundCountdown() {
     }
 }
 
-store.subscribe(startNewRoundCountdown)
+// Push state immediatly after a round has started to minimise
+// delay between server and client update function
+function forcePushStateAtRoundStart(state) {
+	if (prevState.get('state') !== STATE_PLAY && state.get('state') === STATE_PLAY) {
+		serverUpdate()
+	}
+}
+
+
+store.subscribe(() => {
+	const state = store.getState()
+	startNewRoundCountdown(state)
+	forcePushStateAtRoundStart(state)
+})
 
 
 setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client

@@ -1,4 +1,4 @@
-import {List, Map, fromJS} from 'immutable'
+import { List, Map } from 'immutable'
 
 const INITIAL_STATE = Map()
 const PLAYERS_REQUIRED = 2

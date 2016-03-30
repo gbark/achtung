@@ -1,4 +1,4 @@
-import {List, Map, fromJS} from 'immutable'
+import { List, Map } from 'immutable'
 
 import {STATE_WAITING_PLAYERS
 	   , STATE_PLAY
