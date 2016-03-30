@@ -68,7 +68,7 @@ updateSelf state nextState delta keys localPlayer serverPlayer =
                 
                 False ->
                     localPlayer'
-    
+                    
     in
         if nextState == Play then
             syncSelf localPlayer'' serverPlayer
@@ -82,6 +82,7 @@ updateSelf state nextState delta keys localPlayer serverPlayer =
 syncSelf : Player -> PlayerLight -> Player
 syncSelf localPlayer serverPlayer =
     let 
+        -- Set initial position based on server data
         path =
             case localPlayer.path of
                 [] ->
@@ -89,11 +90,25 @@ syncSelf localPlayer serverPlayer =
                 
                 x :: xs ->
                     localPlayer.path
+                    
+        -- Set initial angle based on server data
+        angle =
+            if localPlayer.angle == defaultPlayer.angle then
+                case serverPlayer.angle of
+                    Just angle -> 
+                        angle
+                        
+                    Nothing ->
+                        defaultPlayer.angle
+
+            else
+                localPlayer.angle
+                
         
     in
         { localPlayer | id = serverPlayer.id
                       , path = path
-                      , angle = withDefault localPlayer.angle serverPlayer.angle 
+                      , angle = angle 
                       , alive = withDefault localPlayer.alive serverPlayer.alive
                       , score = withDefault localPlayer.score serverPlayer.score
                       , color = withDefault localPlayer.color serverPlayer.color 
