@@ -10,11 +10,12 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 
 ## Multiplayer Todo
 
-* [x] Render own player on client (but server is authorative)
-* [x] Predictively render opponents on client while continually correcting predictions when data arrive from authorative server
+* [x] Build authorative game server using Node/SocketIO/Immutable/Redux
+* [x] Stream client keyboard input to server for processing
+* [x] Render own player on client
+* [x] Predictively render opponents on client while continually correcting predictions when data arrive from server
 * [ ] Introduce game instances to server to handle multiple ongoing games
-* [ ] Start a game after 6 players have joined OR 2+ players have joined AND it 
-has passed 25 seconds since the 2nd player joined. Whichever comes first.
+* [ ] Start a game after 6 players have joined OR 2+ players have joined AND it has passed 25 seconds since the 2nd player joined. Whichever comes first.
 * [ ] Private games with secret code or URL
 * [ ] Optimise server to client data traffic. 
 	- [x] Send only new positions since last serverUpdate
