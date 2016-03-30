@@ -1,82 +1,109 @@
 module Online where
 
+import Set
+import Char
+import Color
+import Array exposing (Array)
+import Maybe exposing (withDefault)
 
 import Input exposing (Input)
 import Game exposing (..)
 import Player exposing (..)
 import Position exposing (..)
-import Color
-import Array exposing (Array)
-import Maybe exposing (withDefault)
 import Utils exposing (..)
 
 
+type alias TickObject = { state: State
+                      , nextState: State
+                      , delta: Float
+                      , keys: Set.Set Char.KeyCode
+                      , stale: Bool
+                      , localPlayers: (Maybe Player, List Player)
+                      , serverPlayers: (Maybe PlayerLight, List PlayerLight)
+                      }
+
+
 update : Input -> Game -> Game
-update ({ gamearea, clock, server, serverId, keys } as input) game =
+update ({ gamearea, server, serverId } as input) game =
     case serverId of
         Nothing ->
             game
             
         Just id ->
             let 
-                nextState =
-                    case server.state of
-                        Just serverState -> 
-                            serverState
-                        
-                        Nothing ->
-                            game.state
-                            
-                stale = 
-                    isStale game.serverTime server.serverTime
-                            
-                (localPlayer, localOpponents) = 
-                    List.partition (.id >> (==) id) game.players
-                            
-                (serverPlayer, serverOpponents) = 
-                    List.partition (.id >> (==) id) server.players
-                    
-                player =
-                    case List.head serverPlayer of
-                        Nothing ->
-                            []
-                            
-                        Just serverPlayer' ->
-                            [updateSelf game.state nextState clock.delta keys (List.head localPlayer) serverPlayer']
-                    
-                opponents =
-                    updateOpponents game.state nextState clock.delta stale localOpponents serverOpponents
+                tickObject =
+                    getTickObject input game id
                     
             in
-                { game | players = player ++ opponents
-                       , state = nextState
+                { game | players = (updateSelf tickObject) ++ (updateOpponents tickObject)
+                       , state = tickObject.nextState
                        , gamearea = withDefault gamearea server.gamearea 
                        , round = withDefault game.round server.round
                        , serverTime = server.serverTime
                        }
            
-           
-updateSelf state nextState delta keys localPlayer serverPlayer =
-    let 
-        localPlayer' = 
-            Maybe.withDefault defaultPlayer localPlayer
+
+getTickObject : Input -> Game -> String -> TickObject
+getTickObject { clock, server, keys } { state, serverTime, players } id =
+    TickObject 
+        state
+        (case server.state of
+            Just serverState -> 
+                serverState
             
-        localPlayer'' = 
-            case nextState == Play && state /= Play of
-                True ->
-                    resetPlayer localPlayer' 
-                
-                False ->
-                    localPlayer'
+            Nothing ->
+                state)
+        clock.delta
+        keys
+        (isStale serverTime server.serverTime)
+        (List.partition (.id >> (==) id) players |> \x -> (List.head (fst x), snd x))
+        (List.partition (.id >> (==) id) server.players |> \x -> (List.head (fst x), snd x))
+         
+         
+isStale previousServerTime serverTime = 
+    case serverTime of
+        Nothing ->
+            True
+            
+        Just st ->
+            case previousServerTime of 
+                Nothing ->
+                    False
                     
-    in
-        if nextState == Play then
-            syncSelf localPlayer'' serverPlayer
-                |> mapInput keys
-                |> move delta False
-                
-        else
-            syncSelf localPlayer'' serverPlayer
+                Just lt -> 
+                    if st > lt then
+                        False
+                        
+                    else
+                        True
+           
+           
+updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
+    case fst serverPlayers of
+        Nothing ->
+            []
+            
+        Just serverPlayer ->
+            let 
+                localPlayer = 
+                    Maybe.withDefault defaultPlayer (fst localPlayers)
+                    
+                localPlayer' = 
+                    case nextState == Play && state /= Play of
+                        True ->
+                            resetPlayer localPlayer 
+                        
+                        False ->
+                            localPlayer
+                            
+            in
+                if nextState == Play then
+                    [syncSelf localPlayer' serverPlayer
+                        |> mapInput keys
+                        |> move delta False]
+                        
+                else
+                    [syncSelf localPlayer' serverPlayer]
 
 
 syncSelf : Player -> PlayerLight -> Player
@@ -115,43 +142,27 @@ syncSelf localPlayer serverPlayer =
                       }
 
 
-updateOpponents state nextState delta stale localOpponents serverOpponents =
+updateOpponents ({ state, nextState, localPlayers, serverPlayers } as tickObject) =
     let 
-        localOpponents' = 
+        localOpponents = 
             case nextState == Play && state /= Play of
                 True ->
-                    List.map resetPlayer localOpponents 
+                    List.map resetPlayer (snd localPlayers) 
                 
                 False ->
-                    localOpponents
+                    (snd localPlayers)
     
     in
-        List.map (syncOpponents stale delta nextState localOpponents') serverOpponents
-         
-         
-isStale previousServerTime serverTime = 
-    case serverTime of
-        Nothing ->
-            True
-            
-        Just st ->
-            case previousServerTime of 
-                Nothing ->
-                    False
-                    
-                Just lt -> 
-                    if st > lt then
-                        False
-                        
-                    else
-                        True
+        List.map (syncOpponents tickObject localOpponents) (snd serverPlayers)
                 
 
-syncOpponents : Bool -> Float -> State -> List Player -> PlayerLight -> Player
-syncOpponents stale delta nextState localOpponents serverOpponent =
+syncOpponents : TickObject -> List Player -> PlayerLight -> Player
+syncOpponents { stale, delta, nextState } localOpponents serverOpponent =
     let 
         localOpponent = 
-            Maybe.withDefault defaultPlayer <| List.head <| List.filter (.id >> (==) serverOpponent.id) localOpponents
+            List.filter (.id >> (==) serverOpponent.id) localOpponents
+                |> List.head 
+                |> Maybe.withDefault defaultPlayer
             
         localOpponent' =
             syncBuffers localOpponent serverOpponent stale
@@ -194,7 +205,7 @@ syncBuffers player server stale =
 updatePathAndBuffer delta player =
     let 
         actuals = 
-            Array.filter (not << isPrediction) player.pathBuffer
+            Array.filter (isPrediction >> not) player.pathBuffer
             
         predictions =
             Array.filter isPrediction player.pathBuffer
