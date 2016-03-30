@@ -10,7 +10,7 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 
 ## Multiplayer Todo
 
-* [x] Build authorative game server using Node/SocketIO/Immutable/Redux
+* [x] Build authoritative game server using Node/SocketIO/Immutable/Redux
 * [x] Stream client keyboard input to server for processing
 * [x] Render own player on client
 * [x] Predictively render opponents on client while continually correcting predictions when data arrive from server
