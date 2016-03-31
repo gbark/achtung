@@ -59,28 +59,6 @@ updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
                         
                 else
                     [localPlayer]
-                      
-
-seedPath serverPlayer localPlayer =
-    case localPlayer.path of
-        [] ->
-            { localPlayer | path = Array.toList <| Array.map asPosition serverPlayer.pathBuffer }
-            
-        x :: xs ->
-            localPlayer
-            
-            
-setAngle serverPlayer localPlayer =
-    if localPlayer.angle == defaultPlayer.angle then
-        case serverPlayer.angle of
-            Just angle -> 
-                { localPlayer | angle = angle }
-                
-            Nothing ->
-                localPlayer
-
-    else
-        localPlayer
             
 
 updateOpponent : TickObject -> PlayerLight -> Player
@@ -289,6 +267,28 @@ generatePredictions delta angle n seedPosition =
                 (generatePrediction delta angle (asPosition p)) :: p :: ps
                 
     ) [seedPosition] <| List.repeat n 0
+                      
+
+seedPath serverPlayer localPlayer =
+    case localPlayer.path of
+        [] ->
+            { localPlayer | path = Array.toList <| Array.map asPosition serverPlayer.pathBuffer }
+            
+        x :: xs ->
+            localPlayer
+            
+            
+setAngle serverPlayer localPlayer =
+    if localPlayer.angle == defaultPlayer.angle then
+        case serverPlayer.angle of
+            Just angle -> 
+                { localPlayer | angle = angle }
+                
+            Nothing ->
+                localPlayer
+
+    else
+        localPlayer
 
 
 isStale previousServerTime serverTime = 
