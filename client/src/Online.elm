@@ -13,16 +13,6 @@ import Position exposing (..)
 import Utils exposing (..)
 
 
-type alias TickObject = { state: State
-                      , nextState: State
-                      , delta: Float
-                      , keys: Set.Set Char.KeyCode
-                      , stale: Bool
-                      , localPlayers: (Maybe Player, List Player)
-                      , serverPlayers: (Maybe PlayerLight, List PlayerLight)
-                      }
-
-
 update : Input -> Game -> Game
 update ({ gamearea, server, serverId } as input) game =
     case serverId of
@@ -32,7 +22,7 @@ update ({ gamearea, server, serverId } as input) game =
         Just id ->
             let 
                 tickObject =
-                    getTickObject input game id
+                    makeTickObject input game id
                     
                 opponents =
                     List.map (updateOpponent tickObject) (snd tickObject.serverPlayers)
@@ -48,23 +38,6 @@ update ({ gamearea, server, serverId } as input) game =
                        , serverTime = server.serverTime
                        }
            
-
-getTickObject : Input -> Game -> String -> TickObject
-getTickObject { clock, server, keys } { state, serverTime, players } id =
-    TickObject 
-        state
-        (case server.state of
-            Just serverState -> 
-                serverState
-            
-            Nothing ->
-                state)
-        clock.delta
-        keys
-        (isStale serverTime server.serverTime)
-        (List.partition (.id >> (==) id) players |> \x -> (List.head (fst x), snd x))
-        (List.partition (.id >> (==) id) server.players |> \x -> (List.head (fst x), snd x))
-           
            
 updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
     case fst serverPlayers of
@@ -75,55 +48,40 @@ updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
             let 
                 localPlayer = 
                     Maybe.withDefault defaultPlayer (fst localPlayers)
-                    
-                localPlayer' = 
-                    resetAtNewRound state nextState localPlayer
+                    |> resetAtNewRound state nextState
+                    |> seedPath serverPlayer
+                    |> setAngle serverPlayer
+                    |> mapInput keys
                             
             in
                 if nextState == Play then
-                    [syncSelf localPlayer' serverPlayer
-                        |> mapInput keys
-                        |> move delta False]
+                    [move delta False localPlayer]
                         
                 else
-                    [syncSelf localPlayer' serverPlayer]
+                    [localPlayer]
+                      
 
+seedPath serverPlayer localPlayer =
+    case localPlayer.path of
+        [] ->
+            { localPlayer | path = Array.toList <| Array.map asPosition serverPlayer.pathBuffer }
+            
+        x :: xs ->
+            localPlayer
+            
+            
+setAngle serverPlayer localPlayer =
+    if localPlayer.angle == defaultPlayer.angle then
+        case serverPlayer.angle of
+            Just angle -> 
+                { localPlayer | angle = angle }
+                
+            Nothing ->
+                localPlayer
 
-syncSelf : Player -> PlayerLight -> Player
-syncSelf localPlayer serverPlayer =
-    let 
-        -- Set initial position based on server data
-        path =
-            case localPlayer.path of
-                [] ->
-                    Array.toList <| Array.map asPosition serverPlayer.pathBuffer
-                
-                x :: xs ->
-                    localPlayer.path
-                    
-        -- Set initial angle based on server data
-        angle =
-            if localPlayer.angle == defaultPlayer.angle then
-                case serverPlayer.angle of
-                    Just angle -> 
-                        angle
-                        
-                    Nothing ->
-                        defaultPlayer.angle
-
-            else
-                localPlayer.angle
-                
-        
-    in
-        { localPlayer | id = serverPlayer.id
-                      , path = path
-                      , angle = angle 
-                      , alive = withDefault localPlayer.alive serverPlayer.alive
-                      , score = withDefault localPlayer.score serverPlayer.score
-                      , color = withDefault localPlayer.color serverPlayer.color 
-                      }
-                
+    else
+        localPlayer
+            
 
 updateOpponent : TickObject -> PlayerLight -> Player
 updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
@@ -385,3 +343,30 @@ isPrediction p =
     case p of 
         Prediction _ -> True
         Actual _ -> False
+
+
+type alias TickObject = { state: State
+                        , nextState: State
+                        , delta: Float
+                        , keys: Set.Set Char.KeyCode
+                        , stale: Bool
+                        , localPlayers: (Maybe Player, List Player)
+                        , serverPlayers: (Maybe PlayerLight, List PlayerLight)
+                        }
+           
+
+makeTickObject : Input -> Game -> String -> TickObject
+makeTickObject { clock, server, keys } { state, serverTime, players } id =
+    TickObject 
+        state
+        (case server.state of
+            Just serverState -> 
+                serverState
+            
+            Nothing ->
+                state)
+        clock.delta
+        keys
+        (isStale serverTime server.serverTime)
+        (List.partition (.id >> (==) id) players |> \x -> (List.head (fst x), snd x))
+        (List.partition (.id >> (==) id) server.players |> \x -> (List.head (fst x), snd x))
