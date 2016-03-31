@@ -34,8 +34,11 @@ update ({ gamearea, server, serverId } as input) game =
                 tickObject =
                     getTickObject input game id
                     
+                opponents =
+                    List.map (updateOpponent tickObject) (snd tickObject.serverPlayers)
+                    
             in
-                { game | players = (updateSelf tickObject) ++ (updateOpponents tickObject)
+                { game | players = (updateSelf tickObject) ++ opponents
                        , state = tickObject.nextState
                        , gamearea = withDefault gamearea server.gamearea 
                        , round = withDefault game.round server.round
@@ -89,12 +92,7 @@ updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
                     Maybe.withDefault defaultPlayer (fst localPlayers)
                     
                 localPlayer' = 
-                    case nextState == Play && state /= Play of
-                        True ->
-                            resetPlayer localPlayer 
-                        
-                        False ->
-                            localPlayer
+                    resetAtNewRound state nextState localPlayer
                             
             in
                 if nextState == Play then
@@ -140,60 +138,43 @@ syncSelf localPlayer serverPlayer =
                       , score = withDefault localPlayer.score serverPlayer.score
                       , color = withDefault localPlayer.color serverPlayer.color 
                       }
-
-
-updateOpponents ({ state, nextState, localPlayers, serverPlayers } as tickObject) =
-    let 
-        localOpponents = 
-            case nextState == Play && state /= Play of
-                True ->
-                    List.map resetPlayer (snd localPlayers) 
-                
-                False ->
-                    (snd localPlayers)
-    
-    in
-        List.map (syncOpponents tickObject localOpponents) (snd serverPlayers)
                 
 
-syncOpponents : TickObject -> List Player -> PlayerLight -> Player
-syncOpponents { stale, delta, nextState } localOpponents serverOpponent =
+updateOpponent : TickObject -> PlayerLight -> Player
+updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
     let 
         localOpponent = 
-            List.filter (.id >> (==) serverOpponent.id) localOpponents
-                |> List.head 
-                |> Maybe.withDefault defaultPlayer
-            
-        localOpponent' =
-            syncBuffers localOpponent serverOpponent stale
-            
-        { path, pathBuffer } =
-            if nextState == Play then
-                updatePathAndBuffer delta localOpponent'
-                
-            else
-                localOpponent'
+            List.filter (.id >> (==) serverOpponent.id) (snd localPlayers)
+            |> List.head 
+            |> Maybe.withDefault defaultPlayer
+            |> resetAtNewRound state nextState
+            |> syncBuffers serverOpponent stale
+            |> updatePathAndBuffer nextState delta
         
     in
         { localOpponent | id = serverOpponent.id
-                        , path = path
                         , angle = withDefault localOpponent.angle serverOpponent.angle
                         , alive = withDefault localOpponent.alive serverOpponent.alive
                         , score = withDefault localOpponent.score serverOpponent.score
                         , color = withDefault localOpponent.color serverOpponent.color 
-                        , pathBuffer = pathBuffer
                         }
 
 
-resetPlayer player =
-    { player | path = defaultPlayer.path
-             , pathBuffer = defaultPlayer.pathBuffer
-             , angle = defaultPlayer.angle
-             , direction = defaultPlayer.direction
-             }
+resetAtNewRound state nextState player =
+    case nextState == Play && state /= Play of
+        True ->
+            { player | path = defaultPlayer.path
+                     , pathBuffer = defaultPlayer.pathBuffer
+                     , angle = defaultPlayer.angle
+                     , direction = defaultPlayer.direction
+                     }
+        
+        False ->
+            player
+    
              
 
-syncBuffers player server stale =
+syncBuffers server stale player =
     case stale of
         True ->
             player
@@ -202,26 +183,31 @@ syncBuffers player server stale =
             { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
     
     
-updatePathAndBuffer delta player =
-    let 
-        actuals = 
-            Array.filter (isPrediction >> not) player.pathBuffer
-            
-        predictions =
-            Array.filter isPrediction player.pathBuffer
-            
-    in
-        if Array.isEmpty actuals then
-            appendPrediction predictions delta player
-        
-        else if Array.length actuals > Array.length predictions then
-            appendActuals actuals predictions player
-            
-        else if not (Array.isEmpty actuals) then
-            appendActualsAndPadWithPredictions actuals predictions delta player
-                            
-        else 
-            appendActualsAndPadWithPrediction actuals predictions delta player
+updatePathAndBuffer nextState delta player =
+    case nextState == Play of
+        True ->
+            let 
+                actuals = 
+                    Array.filter (isPrediction >> not) player.pathBuffer
+                    
+                predictions =
+                    Array.filter isPrediction player.pathBuffer
+                    
+            in
+                if Array.isEmpty actuals then
+                    appendPrediction predictions delta player
+                
+                else if Array.length actuals > Array.length predictions then
+                    appendActuals actuals predictions player
+                    
+                else if not (Array.isEmpty actuals) then
+                    appendActualsAndPadWithPredictions actuals predictions delta player
+                                    
+                else 
+                    appendActualsAndPadWithPrediction actuals predictions delta player
+                    
+        False ->
+            player
                                 
 
 -- Add one prediction to path and pathBuffer
