@@ -37,8 +37,11 @@ update ({ gamearea, server, serverId } as input) game =
                 opponents =
                     List.map (updateOpponent tickObject) (snd tickObject.serverPlayers)
                     
+                self =
+                    updateSelf tickObject
+                    
             in
-                { game | players = (updateSelf tickObject) ++ opponents
+                { game | players = self ++ opponents
                        , state = tickObject.nextState
                        , gamearea = withDefault gamearea server.gamearea 
                        , round = withDefault game.round server.round
@@ -61,24 +64,6 @@ getTickObject { clock, server, keys } { state, serverTime, players } id =
         (isStale serverTime server.serverTime)
         (List.partition (.id >> (==) id) players |> \x -> (List.head (fst x), snd x))
         (List.partition (.id >> (==) id) server.players |> \x -> (List.head (fst x), snd x))
-         
-         
-isStale previousServerTime serverTime = 
-    case serverTime of
-        Nothing ->
-            True
-            
-        Just st ->
-            case previousServerTime of 
-                Nothing ->
-                    False
-                    
-                Just lt -> 
-                    if st > lt then
-                        False
-                        
-                    else
-                        True
            
            
 updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
@@ -158,29 +143,6 @@ updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
                         , score = withDefault localOpponent.score serverOpponent.score
                         , color = withDefault localOpponent.color serverOpponent.color 
                         }
-
-
-resetAtNewRound state nextState player =
-    case nextState == Play && state /= Play of
-        True ->
-            { player | path = defaultPlayer.path
-                     , pathBuffer = defaultPlayer.pathBuffer
-                     , angle = defaultPlayer.angle
-                     , direction = defaultPlayer.direction
-                     }
-        
-        False ->
-            player
-    
-             
-
-syncBuffers server stale player =
-    case stale of
-        True ->
-            player
-            
-        False ->
-            { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
     
     
 updatePathAndBuffer nextState delta player =
@@ -369,6 +331,47 @@ generatePredictions delta angle n seedPosition =
                 (generatePrediction delta angle (asPosition p)) :: p :: ps
                 
     ) [seedPosition] <| List.repeat n 0
+
+
+isStale previousServerTime serverTime = 
+    case serverTime of
+        Nothing ->
+            True
+            
+        Just st ->
+            case previousServerTime of 
+                Nothing ->
+                    False
+                    
+                Just lt -> 
+                    if st > lt then
+                        False
+                        
+                    else
+                        True
+
+
+resetAtNewRound state nextState player =
+    case nextState == Play && state /= Play of
+        True ->
+            { player | path = defaultPlayer.path
+                     , pathBuffer = defaultPlayer.pathBuffer
+                     , angle = defaultPlayer.angle
+                     , direction = defaultPlayer.direction
+                     }
+        
+        False ->
+            player
+    
+             
+
+syncBuffers server stale player =
+    case stale of
+        True ->
+            player
+            
+        False ->
+            { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
 
 
 asPosition : PositionOnline -> Position (Float, Float)
