@@ -96,7 +96,7 @@ updatePathAndBuffer nextState delta player =
                     
             in
                 if Array.isEmpty actuals then
-                    appendPrediction predictions delta player
+                    appendActualsAndPadWithPrediction actuals predictions delta player
                 
                 else if Array.length actuals > Array.length predictions then
                     appendActuals actuals predictions player
@@ -106,34 +106,7 @@ updatePathAndBuffer nextState delta player =
                                     
                 else 
                     appendActualsAndPadWithPrediction actuals predictions delta player
-                                
-
--- Add one prediction to path and pathBuffer
-appendPrediction : Array PositionOnline -> Float -> Player -> Player
-appendPrediction predictions delta player =
-    -- let log = Debug.log "appendPrediction" True in
-    case player.path of
-        [] ->
-            player
-            
-        p :: ps ->
-            let 
-                prediction = 
-                    generatePrediction delta player.angle p
-                    
-                path' =
-                       [asPosition prediction] 
-                    ++ player.path
-                    
-                pathBuffer' =
-                    Array.append (Array.fromList [prediction]) predictions 
-                    
-            in
-                { player | path = path'
-                         , pathBuffer = pathBuffer'
-                         }
-        
-    
+         
 
 -- Replace any predictions on path with actual positions and add an actual position on top. 
 -- All actual positions, minus one, which have no prediction to replace should be saved in pathBuffer. The left
@@ -212,14 +185,21 @@ appendActualsAndPadWithPrediction : Array PositionOnline -> Array PositionOnline
 appendActualsAndPadWithPrediction actuals predictions delta player = 
     let 
         -- log = Debug.log "appendActualsAndPadWithPrediction" True
+        
+        predictions' =
+            if Array.isEmpty actuals then
+                predictions
+            
+            else
+                Array.empty
             
         predictionsLength =
-            Array.length predictions
+            Array.length predictions'
         
         actuals' =
             Array.toList <| Array.map asPosition actuals
         
-        prediction = 
+        newPrediction = 
             case actuals' of 
                 [] -> 
                     Prediction (Hidden (0, 0))
@@ -228,12 +208,12 @@ appendActualsAndPadWithPrediction actuals predictions delta player =
                     generatePrediction delta player.angle p
             
         path' =
-               [asPosition prediction] 
+               [asPosition newPrediction] 
             ++ actuals'
             ++ (List.drop predictionsLength player.path) 
             
         pathBuffer =
-            Array.fromList [prediction] 
+            Array.append (Array.fromList [newPrediction]) predictions
             
     in
         { player | path = path'
