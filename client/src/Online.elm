@@ -23,7 +23,7 @@ update ({ gamearea, server, serverId } as input) game =
             let 
                 tickObject =
                     makeTickObject input game id
-                    
+                
                 opponents =
                     List.map (updateOpponent tickObject) (snd tickObject.serverPlayers)
                     
@@ -46,19 +46,26 @@ updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
             
         Just serverPlayer ->
             let 
-                localPlayer = 
+                localPlayer =
                     Maybe.withDefault defaultPlayer (fst localPlayers)
+                    
+                localPlayer' = 
+                    { localPlayer | id = serverPlayer.id
+                                  , alive = withDefault localPlayer.alive serverPlayer.alive
+                                  , score = withDefault localPlayer.score serverPlayer.score
+                                  , color = withDefault localPlayer.color serverPlayer.color 
+                                  }
                     |> resetAtNewRound state nextState
-                    |> seedPath serverPlayer
-                    |> setAngle serverPlayer
+                    |> setInitialPath serverPlayer
+                    |> setInitialAngle serverPlayer
                     |> mapInput keys
                             
             in
                 if nextState == Play then
-                    [move delta False localPlayer]
+                    [move delta False localPlayer']
                         
                 else
-                    [localPlayer]
+                    [localPlayer']
             
 
 updateOpponent : TickObject -> PlayerLight -> Player
@@ -252,7 +259,7 @@ generatePredictions delta angle n seedPosition =
     ) [seedPosition] <| List.repeat n 0
                       
 
-seedPath serverPlayer localPlayer =
+setInitialPath serverPlayer localPlayer =
     case localPlayer.path of
         [] ->
             { localPlayer | path = Array.toList <| Array.map asPosition serverPlayer.pathBuffer }
@@ -261,7 +268,7 @@ seedPath serverPlayer localPlayer =
             localPlayer
             
             
-setAngle serverPlayer localPlayer =
+setInitialAngle serverPlayer localPlayer =
     if localPlayer.angle == defaultPlayer.angle then
         case serverPlayer.angle of
             Just angle -> 
