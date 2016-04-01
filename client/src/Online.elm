@@ -102,17 +102,11 @@ updatePathAndBuffer nextState delta player =
                     Array.filter isPrediction player.pathBuffer
                     
             in
-                if Array.isEmpty actuals then
-                    appendActualsAndPadWithPrediction actuals predictions delta player
-                
-                else if Array.length actuals > Array.length predictions then
+                if Array.length actuals > Array.length predictions then
                     appendActuals actuals predictions player
                     
-                else if not (Array.isEmpty actuals) then
+                else
                     appendActualsAndPadWithPredictions actuals predictions delta player
-                                    
-                else 
-                    appendActualsAndPadWithPrediction actuals predictions delta player
          
 
 -- Replace any predictions on path with actual positions and add an actual position on top. 
@@ -146,81 +140,48 @@ appendActuals actuals predictions player =
         { player | path = path
                  , pathBuffer = pathBuffer
                  }
-                
--- Replace as many predictions as possible with actual positions. Clear pathBuffer of replaced and generate
--- new predictions to replace out of date predictions. 
-appendActualsAndPadWithPredictions : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
-appendActualsAndPadWithPredictions actuals predictions delta ({ pathBuffer } as player) =
-    let 
-        -- log = Debug.log "appendActualsAndPadWithPredictions" True
-    
-        actualsLength =
-            Array.length actuals
-            
-        predictionsLength =
-            Array.length predictions
-            
-        diff = 
-            predictionsLength - actualsLength
-            
-        actuals' =
-            Array.toList actuals
-            
-        seed = 
-            withDefault (Prediction (Hidden (0, 0))) (List.head actuals')
-    
-        newPredictions = 
-            generatePredictions delta player.angle diff seed
-        
-        path = 
-               (List.map asPosition newPredictions) 
-            ++ (List.map asPosition actuals')
-            ++ (List.drop diff <| List.take predictionsLength player.path)
-            ++ (List.drop predictionsLength player.path)
-        
-        pathBuffer' =
-            Array.append (Array.fromList newPredictions) (Array.slice 0 -(actualsLength) pathBuffer)  
-            
-    in
-        { player | path = path
-                 , pathBuffer = pathBuffer' 
-                 }
 
 -- Replace as many predictions as possible with actual positions. Clear pathBuffer and generate
 -- new predictions to replace out of date predictions. Generate one prediction to pad path.
-appendActualsAndPadWithPrediction : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
-appendActualsAndPadWithPrediction actuals predictions delta player = 
+appendActualsAndPadWithPredictions : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+appendActualsAndPadWithPredictions actuals predictions delta player = 
     let 
-        -- log = Debug.log "appendActualsAndPadWithPrediction" True
-        
+        -- log = Debug.log "appendActualsAndPadWithPredictions" True
         predictions' =
             if Array.isEmpty actuals then
                 predictions
             
             else
                 Array.empty
+                
+        actualsLength =
+            Array.length actuals
             
         predictionsLength =
             Array.length predictions'
+            
+        diff = 
+            predictionsLength - actualsLength
         
         actuals' =
-            Array.toList <| Array.map asPosition actuals
-        
-        newPrediction = 
+            Array.toList actuals
+            
+        newPredictions = 
             case actuals' of 
                 [] -> 
-                    Prediction (Hidden (0, 0))
+                    [Prediction (Hidden (0, 0))]
                 
-                p :: ps ->
-                    generatePrediction delta player.angle p
+                seed :: _ ->
+                    generatePredictions delta player.angle diff seed
             
         path' =
-               [asPosition newPrediction] 
-            ++ actuals'
+               (List.map asPosition newPredictions) 
+            ++ (List.map asPosition actuals')
+            ++ (List.drop diff <| List.take predictionsLength player.path)
             ++ (List.drop predictionsLength player.path) 
             
         pathBuffer =
-            Array.append (Array.fromList [newPrediction]) predictions
+          Array.append (Array.fromList newPredictions) (Array.slice 0 -(actualsLength) predictions)
             
     in
         { player | path = path'
