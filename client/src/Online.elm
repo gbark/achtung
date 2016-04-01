@@ -102,67 +102,70 @@ updatePathAndBuffer nextState delta player =
             
         True ->
             let 
-                actuals = 
-                    List.map asPosition <| Array.toList <| Array.filter (isPrediction >> not) player.pathBuffer
+                freshPositions = 
+                    Array.filter (isPrediction >> not) player.pathBuffer
+                    |> Array.toList 
+                    |> List.map asPosition
                     
-                predictions =
+                oldPredictions =
                     Array.filter isPrediction player.pathBuffer
                     
             in
-                if List.length actuals > Array.length predictions then
+                if List.length freshPositions > Array.length oldPredictions then
                     -- We have low latency and are in sync with server. 
-                    -- Just append next positions received from server and remove any predictions.
-                    { player | path = actuals ++ (List.drop (Array.length predictions) player.path)
+                    -- Just append fresh positions received from server and remove any predictions.
+                    { player | path = freshPositions ++ (List.drop (Array.length oldPredictions) player.path)
                              , pathBuffer = Array.empty
                              }
                     
                 else
                     -- We have some latency and are behind server. Need to predict next position.
-                    appendActualsAndPadWithPredictions actuals predictions delta player
+                    appendFreshPositionsAndPadWithPredictions freshPositions oldPredictions delta player
                     
 
-appendActualsAndPadWithPredictions : List (Position ( Float, Float )) -> Array PositionOnline -> Float -> Player -> Player
-appendActualsAndPadWithPredictions actuals predictions delta player = 
+appendFreshPositionsAndPadWithPredictions : List (Position ( Float, Float )) -> Array PositionOnline -> Float -> Player -> Player
+appendFreshPositionsAndPadWithPredictions freshPositions oldPredictions delta player = 
     let 
-        -- log = Debug.log "appendActualsAndPadWithPredictions" True
-        predictions' =
-            if List.isEmpty actuals then
-                predictions
-            
-            else
-                Array.empty
-                
-        actualsLength =
-            List.length actuals
-            
-        predictionsLength =
-            Array.length predictions'
+        -- log = Debug.log "appendFreshPositionsAndPadWithPredictions" True
+        oldPredictionsLength =
+            Array.length oldPredictions
             
         diff = 
-            predictionsLength - actualsLength
+            oldPredictionsLength - (List.length freshPositions)
             
         newPredictions = 
-            case actuals of 
+            case freshPositions of 
                 [] -> 
-                    []
+                    case player.path of
+                        [] ->
+                            []
+                            
+                        seed :: _ ->
+                            generatePredictions delta player.angle 1 seed
                 
                 seed :: _ ->
                     generatePredictions delta player.angle diff seed
             
         path =
                (List.map asPosition newPredictions) 
-            ++ actuals
-            ++ (List.drop diff <| List.take predictionsLength player.path)
-            ++ (List.drop predictionsLength player.path) 
-            
-        pathBuffer =
-            Array.append (Array.fromList newPredictions) (Array.slice 0 -(actualsLength) predictions)
+            ++ freshPositions
+            ++ (List.drop diff <| List.take oldPredictionsLength player.path)
+            ++ (List.drop oldPredictionsLength player.path) 
             
     in
         { player | path = path
-                 , pathBuffer = pathBuffer
+                 , pathBuffer = makePathBuffer freshPositions newPredictions oldPredictions
                  }
-                    
+
+
+makePathBuffer freshPositions newPredictions oldPredictions =
+    case List.isEmpty freshPositions of 
+        True ->
+            Array.append (Array.fromList newPredictions) oldPredictions
+            
+        False ->
+            Array.fromList newPredictions
+
                     
 generatePrediction delta angle seedPosition =
     let 
