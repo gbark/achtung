@@ -103,7 +103,7 @@ updatePathAndBuffer nextState delta player =
         True ->
             let 
                 actuals = 
-                    Array.toList <| Array.filter (isPrediction >> not) player.pathBuffer
+                    List.map asPosition <| Array.toList <| Array.filter (isPrediction >> not) player.pathBuffer
                     
                 predictions =
                     Array.filter isPrediction player.pathBuffer
@@ -112,7 +112,7 @@ updatePathAndBuffer nextState delta player =
                 if List.length actuals > Array.length predictions then
                     -- We have low latency and are in sync with server. 
                     -- Just append next positions received from server and remove any predictions.
-                    { player | path = (List.map asPosition actuals) ++ (List.drop (Array.length predictions) player.path)
+                    { player | path = actuals ++ (List.drop (Array.length predictions) player.path)
                              , pathBuffer = Array.empty
                              }
                     
@@ -121,7 +121,7 @@ updatePathAndBuffer nextState delta player =
                     appendActualsAndPadWithPredictions actuals predictions delta player
                     
 
-appendActualsAndPadWithPredictions : List PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+appendActualsAndPadWithPredictions : List (Position ( Float, Float )) -> Array PositionOnline -> Float -> Player -> Player
 appendActualsAndPadWithPredictions actuals predictions delta player = 
     let 
         -- log = Debug.log "appendActualsAndPadWithPredictions" True
@@ -149,9 +149,9 @@ appendActualsAndPadWithPredictions actuals predictions delta player =
                 seed :: _ ->
                     generatePredictions delta player.angle diff seed
             
-        path' =
+        path =
                (List.map asPosition newPredictions) 
-            ++ (List.map asPosition actuals)
+            ++ actuals
             ++ (List.drop diff <| List.take predictionsLength player.path)
             ++ (List.drop predictionsLength player.path) 
             
@@ -159,7 +159,7 @@ appendActualsAndPadWithPredictions actuals predictions delta player =
             Array.append (Array.fromList newPredictions) (Array.slice 0 -(actualsLength) predictions)
             
     in
-        { player | path = path'
+        { player | path = path
                  , pathBuffer = pathBuffer
                  }
                     
@@ -187,7 +187,7 @@ generatePredictions delta angle n seedPosition =
     List.foldr (\_ acc ->
         case acc of 
             [] ->
-                case generatePrediction delta angle (asPosition seedPosition) of
+                case generatePrediction delta angle seedPosition of
                     Nothing ->
                         acc
                     
