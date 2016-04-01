@@ -103,68 +103,46 @@ updatePathAndBuffer nextState delta player =
         True ->
             let 
                 actuals = 
-                    Array.filter (isPrediction >> not) player.pathBuffer
+                    Array.toList <| Array.filter (isPrediction >> not) player.pathBuffer
                     
                 predictions =
                     Array.filter isPrediction player.pathBuffer
                     
             in
-                if Array.length actuals > Array.length predictions then
+                if List.length actuals > Array.length predictions then
                     -- We have low latency and are in sync with server. 
                     -- Just append next positions received from server and remove any predictions.
-                    appendActuals actuals predictions delta player
+                    { player | path = (List.map asPosition actuals) ++ (List.drop (Array.length predictions) player.path)
+                             , pathBuffer = Array.empty
+                             }
                     
                 else
                     -- We have some latency and are behind server. Need to predict next position.
                     appendActualsAndPadWithPredictions actuals predictions delta player
-         
+                    
 
-appendActuals : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player  
-appendActuals actuals predictions delta player =
-    let
-        -- log = Debug.log "appendActuals" True
-        
-        predictionsLength =
-            Array.length predictions
-            
-        actuals' =
-            Array.toList actuals
-            
-        path =
-            (List.map asPosition actuals') 
-            ++ (List.drop predictionsLength player.path)
-            
-    in
-        { player | path = path
-                 , pathBuffer = Array.empty
-                 }
-
-
-appendActualsAndPadWithPredictions : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
+appendActualsAndPadWithPredictions : List PositionOnline -> Array PositionOnline -> Float -> Player -> Player
 appendActualsAndPadWithPredictions actuals predictions delta player = 
     let 
         -- log = Debug.log "appendActualsAndPadWithPredictions" True
         predictions' =
-            if Array.isEmpty actuals then
+            if List.isEmpty actuals then
                 predictions
             
             else
                 Array.empty
                 
         actualsLength =
-            Array.length actuals
+            List.length actuals
             
         predictionsLength =
             Array.length predictions'
             
         diff = 
             predictionsLength - actualsLength
-        
-        actuals' =
-            Array.toList actuals
             
         newPredictions = 
-            case actuals' of 
+            case actuals of 
                 [] -> 
                     []
                 
@@ -173,12 +151,12 @@ appendActualsAndPadWithPredictions actuals predictions delta player =
             
         path' =
                (List.map asPosition newPredictions) 
-            ++ (List.map asPosition actuals')
+            ++ (List.map asPosition actuals)
             ++ (List.drop diff <| List.take predictionsLength player.path)
             ++ (List.drop predictionsLength player.path) 
             
         pathBuffer =
-          Array.append (Array.fromList newPredictions) (Array.slice 0 -(actualsLength) predictions)
+            Array.append (Array.fromList newPredictions) (Array.slice 0 -(actualsLength) predictions)
             
     in
         { player | path = path'
@@ -209,7 +187,12 @@ generatePredictions delta angle n seedPosition =
     List.foldr (\_ acc ->
         case acc of 
             [] ->
-                []
+                case generatePrediction delta angle (asPosition seedPosition) of
+                    Nothing ->
+                        acc
+                    
+                    Just prediction ->
+                        prediction :: acc
             
             p :: _ ->
                 case generatePrediction delta angle (asPosition p) of
@@ -219,7 +202,7 @@ generatePredictions delta angle n seedPosition =
                     Just prediction ->
                         prediction :: acc
                 
-    ) [seedPosition] <| List.repeat n 0
+    ) [] <| List.repeat n 0
                       
 
 setInitialPath serverPlayer localPlayer =
