@@ -24,6 +24,7 @@ type alias Game =
     , gamearea: (Int, Int)
     , round: Int
     , serverTime: Maybe Float
+    , sequence: Int
     }
 
 
@@ -45,6 +46,7 @@ defaultGame =
     , gamearea = (0, 0)
     , round = 0
     , serverTime = Nothing
+    , sequence = 0
     }
     
 

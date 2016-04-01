@@ -30,12 +30,15 @@ update ({ gamearea, server, serverId } as input) game =
                 self =
                     updateSelf tickObject
                     
+                log = Debug.log "sequence" game.sequence
+                    
             in
                 { game | players = self ++ opponents
                        , state = tickObject.nextState
                        , gamearea = withDefault gamearea server.gamearea 
                        , round = withDefault game.round server.round
                        , serverTime = server.serverTime
+                       , sequence = if tickObject.nextState == Play && game.state /= Play then 0 else game.sequence + 1
                        }
            
            
@@ -58,7 +61,9 @@ updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
                     |> resetAtNewRound state nextState
                     |> setInitialPath serverPlayer
                     |> setInitialAngle serverPlayer
-                    |> mapInput keys
+                    |> mapInput keys                
+                    
+                log = Debug.log "self path length" (List.length localPlayer'.path)
                             
             in
                 if nextState == Play then
@@ -78,6 +83,8 @@ updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
             |> resetAtNewRound state nextState
             |> syncBuffers serverOpponent stale
             |> updatePathAndBuffer nextState delta
+            
+        log = Debug.log "opponent path length" (List.length localOpponent.path)
         
     in
         { localOpponent | id = serverOpponent.id
@@ -103,46 +110,36 @@ updatePathAndBuffer nextState delta player =
                     
             in
                 if Array.length actuals > Array.length predictions then
-                    appendActuals actuals predictions player
+                    -- We have low latency and are in sync with server. 
+                    -- Just append next positions received from server and remove any predictions.
+                    appendActuals actuals predictions delta player
                     
                 else
+                    -- We have some latency and are behind server. Need to predict next position.
                     appendActualsAndPadWithPredictions actuals predictions delta player
          
 
--- Replace any predictions on path with actual positions and add an actual position on top. 
--- All actual positions, minus one, which have no prediction to replace should be saved in pathBuffer. The left
--- over actual position should be added to path.
-appendActuals : Array PositionOnline -> Array PositionOnline -> Player -> Player  
-appendActuals actuals predictions player =
+appendActuals : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player  
+appendActuals actuals predictions delta player =
     let
         -- log = Debug.log "appendActuals" True
         
-        actualsLength =
-            Array.length actuals
-            
         predictionsLength =
             Array.length predictions
-            
-        diff = 
-            actualsLength - predictionsLength
             
         actuals' =
             Array.toList actuals
             
         path =
-               (List.map asPosition <| List.drop (diff - 1) actuals') 
+            (List.map asPosition actuals') 
             ++ (List.drop predictionsLength player.path)
-            
-        pathBuffer =
-            Array.fromList <| List.take (diff - 1) actuals'
             
     in
         { player | path = path
-                 , pathBuffer = pathBuffer
+                 , pathBuffer = Array.empty
                  }
 
--- Replace as many predictions as possible with actual positions. Clear pathBuffer and generate
--- new predictions to replace out of date predictions. Generate one prediction to pad path.
+
 appendActualsAndPadWithPredictions : Array PositionOnline -> Array PositionOnline -> Float -> Player -> Player
 appendActualsAndPadWithPredictions actuals predictions delta player = 
     let 
@@ -169,7 +166,7 @@ appendActualsAndPadWithPredictions actuals predictions delta player =
         newPredictions = 
             case actuals' of 
                 [] -> 
-                    [Prediction (Hidden (0, 0))]
+                    []
                 
                 seed :: _ ->
                     generatePredictions delta player.angle diff seed
@@ -202,20 +199,25 @@ generatePrediction delta angle seedPosition =
     in 
         case path of 
             [] ->
-                Prediction (Hidden (0, 0))
+                Nothing
                 
             p :: ps ->
-                Prediction p 
+                Just (Prediction p)
 
 
 generatePredictions delta angle n seedPosition =
-    List.foldl (\_ acc -> 
+    List.foldr (\_ acc ->
         case acc of 
             [] ->
                 []
             
-            p :: ps ->
-                (generatePrediction delta angle (asPosition p)) :: p :: ps
+            p :: _ ->
+                case generatePrediction delta angle (asPosition p) of
+                    Nothing ->
+                        acc
+                    
+                    Just prediction ->
+                        prediction :: acc
                 
     ) [seedPosition] <| List.repeat n 0
                       
@@ -303,11 +305,12 @@ type alias TickObject = { state: State
                         , stale: Bool
                         , localPlayers: (Maybe Player, List Player)
                         , serverPlayers: (Maybe PlayerLight, List PlayerLight)
+                        , sequence: Int
                         }
            
 
 makeTickObject : Input -> Game -> String -> TickObject
-makeTickObject { clock, server, keys } { state, serverTime, players } id =
+makeTickObject { clock, server, keys } { state, serverTime, players, sequence } id =
     TickObject 
         state
         (case server.state of
@@ -321,3 +324,4 @@ makeTickObject { clock, server, keys } { state, serverTime, players } id =
         (isStale serverTime server.serverTime)
         (List.partition (.id >> (==) id) players |> \x -> (List.head (fst x), snd x))
         (List.partition (.id >> (==) id) server.players |> \x -> (List.head (fst x), snd x))
+        sequence
