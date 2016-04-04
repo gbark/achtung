@@ -33,11 +33,12 @@ export function removePlayer(id) {
 }
 
 
-export function setDirection(direction, id) {
+export function setDirection(direction, id, sequence) {
 	return {
         type: SET_DIRECTION,
         direction,
-        id
+        id,
+        sequence
     }
 }
 

@@ -14,7 +14,7 @@ import { UPDATE
        , CLEAR_BUFFER
        , END_COOLDOWN } from './action_creators'
 
-export default function reducer(state = Map(), action) {
+export default function reducer(state = Map({ sequence: 0 }), action) {
     switch(action.type) {
         case UPDATE:
             return update(action.delta, action.gamearea, state)
@@ -31,7 +31,9 @@ export default function reducer(state = Map(), action) {
             
         case SET_DIRECTION:
             if (state.getIn(['players', action.id])) {
-                return state.setIn(['players', action.id, 'direction'], action.direction)
+                return state
+                    .setIn(['players', action.id, 'sequence'], action.sequence)
+                    .setIn(['players', action.id, 'direction'], action.direction)
             }
             
             return state

@@ -60,7 +60,8 @@ input =
         
 port playerOutput : Signal PlayerOutput
 port playerOutput =
-    Signal.map makePlayerOutput input 
+    Signal.map2 makePlayerOutput input gameState
+        |> Signal.sampleOn (Signal.map (.keys >> makeDirection) input |> Signal.dropRepeats)
         |> Signal.dropRepeats
         
         

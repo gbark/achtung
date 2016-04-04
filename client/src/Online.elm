@@ -30,6 +30,9 @@ update ({ gamearea, server, serverId } as input) game =
                 self =
                     updateSelf tickObject
                     
+                sequence =
+                    updateSequence tickObject game.sequence
+                    
                 log = Debug.log "sequence" game.sequence
                     
             in
@@ -38,9 +41,20 @@ update ({ gamearea, server, serverId } as input) game =
                        , gamearea = withDefault gamearea server.gamearea 
                        , round = withDefault game.round server.round
                        , serverTime = server.serverTime
-                       , sequence = if tickObject.nextState == Play && game.state /= Play then 0 else game.sequence + 1
+                       , sequence = sequence
                        }
-           
+
+
+updateSequence { state, nextState } sequence =
+    if nextState == Play && state /= Play then 
+        0 
+        
+    else if nextState == Play then
+        sequence + 1
+        
+    else
+        sequence
+
            
 updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
     case fst serverPlayers of

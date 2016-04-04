@@ -21,21 +21,25 @@ export const DEFAULT_PLAYER = Map({
 	direction: STRAIGHT,
 	alive: true,
 	score: 0,
-    color: null
+    color: null,
+    sequence: 0
 })
 
 
-export function update(delta, gamearea, game = Map()) {
+export function update(delta, gamearea, game) {
 	const nextState = updateState(game.get('players'), game.get('state')),
+          
+          nextSequence = updateSequence(game.get('state'), nextState, game.get('sequence')),
 	
-		  nextPlayers = updatePlayers(delta, gamearea, game.get('state'), nextState, game.get('players')),
+		  nextPlayers = updatePlayers(delta, gamearea, game.get('state'), nextState, nextSequence, game.get('players')),
 		  
-		  nextRound = updateRound(game.get('state'), nextState, game.get('round'))	
+		  nextRound = updateRound(game.get('state'), nextState, game.get('round'))
     
     
 	return game.set('state', nextState)
 			   .set('players', nextPlayers)
 			   .set('round', nextRound)
+               .set('sequence', nextSequence)
 }
 
 
@@ -98,34 +102,27 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
 }
 
 
-function updatePlayers(delta, gamearea, state, nextState, players = Map()) {
+function updatePlayers(delta, gamearea, state, nextState, sequence, players = Map()) {
 	
 	switch(nextState) {
         case STATE_WAITING_PLAYERS:
 			return players
 			
         case STATE_PLAY:
-            if (state === STATE_PLAY) {
-                
-                return players.map((player, id) => {
-                    const opponents = players.delete(id)
-                    return updatePlayer(delta, gamearea, opponents, player)
-                })
-                
-            } else {
-                
-                return players.map((player, id) => {
-                    const opponents = players.delete(id)
-                    const nextPlayer = updatePlayer(delta, gamearea, opponents, player)
-                    return initPlayer(gamearea, nextPlayer)
-                })
-                
-            }
+            return players.map((p, id) => {
+                const opponents = players.delete(id)
+                const player = state === STATE_WAITING_PLAYERS ? initPlayer(gamearea, p) : p
+                return updatePlayer(delta, gamearea, sequence, opponents, player)
+            })
             
 			
 			
         case STATE_ROUNDOVER:
-			return players
+			return players.map((p, id) => {
+                const opponents = players.delete(id)
+                const player = updatePlayer(delta, gamearea, sequence, opponents, p)
+                return initPlayer(gamearea, player)
+            })
             
 			
 			
@@ -154,21 +151,26 @@ function updateRound(state, nextState, round = 1) {
 }
 
 
-function updatePlayer(delta, gamearea, opponents, player) {
+function updateSequence(state, nextState, sequence = -1) {
+    if (state !== STATE_PLAY && nextState === STATE_PLAY) {
+        return 0
+    } else if (nextState === STATE_PLAY) {
+        return sequence + 1
+    }
+    return sequence
+}
+
+
+function updatePlayer(delta, gamearea, serverSequence, opponents, player) {
     if (!player.get('alive')) {
         return player
     }
-          
-    if (player.get('path').first() === undefined) {
-        return initPlayer(gamearea, player)
-    }
-    
-    const nextPlayer = move(delta, player),
-    
-          position = nextPlayer.get('path').first()
         
+    const nextPlayer = move(delta, serverSequence, player),
+    
+          position = nextPlayer.get('path').first(),
         
-    const paths = collisionPaths(nextPlayer, opponents),
+          paths = collisionPaths(nextPlayer, opponents),
     
           hs = paths.some(path => {
               return hitSnake(path, position)
@@ -176,19 +178,15 @@ function updatePlayer(delta, gamearea, opponents, player) {
           
           hw = hitWall(position, gamearea),
           
-          winner = opponents.filter(p => { return p.get('alive') === true }).count() < 1
+          winner = opponents.filter(p => { 
+              return p.get('alive') === true 
+          }).count() < 1
           
           
-    if (hs) {
-        // console.log('hs!')
-        return nextPlayer.set('alive', false)
-        
-    } else if (hw) {
-        // console.log('hw!')
+    if (hs || hw) {
         return nextPlayer.set('alive', false)
         
     } else if (winner) {
-        // console.log('winner :D')
         return nextPlayer.set('alive', false)
                          .set('score', player.get('score') + 1)                    
     } 
@@ -198,7 +196,7 @@ function updatePlayer(delta, gamearea, opponents, player) {
 }
 
 
-function move(delta, player) {
+function move(delta, serverSequence, player) {
     const direction = player.get('direction')
     let angle = player.get('angle')
     if (direction == LEFT) {
@@ -206,6 +204,9 @@ function move(delta, player) {
     } else if (direction == RIGHT) {
         angle = angle + -MAX_ANGLE_CHANGE
     }
+    
+    console.log('serverSequence: ' + serverSequence + ' playerSequence:' + player.get('sequence'))
+    // console.log('serverSequence - playerSequence: ' + (serverSequence - player.get('sequence')))
     
     const vx = Math.cos(angle * Math.PI / 180),
           vy = Math.sin(angle * Math.PI / 180),
@@ -329,6 +330,7 @@ function initPlayer(gamearea, player) {
                  .set('path', path)
                  .set('pathBuffer', path)
                  .set('alive', true)
+                 .set('sequence', 0)
 }
 
 

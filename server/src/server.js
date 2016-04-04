@@ -32,7 +32,7 @@ export default function startServer(store) {
         store.dispatch(addPlayer(id, colors.shift()))
 
         socket.on('playerOutput', (data) => {
-            store.dispatch(setDirection(data.direction, id))
+            store.dispatch(setDirection(data.direction, id, data.sequence))
         })
 
         socket.on('disconnect', () => {
