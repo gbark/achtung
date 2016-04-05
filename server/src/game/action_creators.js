@@ -2,7 +2,7 @@ export const UPDATE = 'achtung/UPDATE'
 export const ADD_PLAYER = 'achtung/ADD_PLAYER'
 export const REMOVE_PLAYER = 'achtung/REMOVE_PLAYER'
 export const SET_DIRECTION = 'achtung/SET_DIRECTION'
-export const CLEAR_BUFFER = 'achtung/CLEAR_BUFFER'
+export const CLEAR_POSITIONS = 'achtung/CLEAR_POSITIONS'
 export const END_COOLDOWN = 'achtung/END_COOLDOWN'
 
 
@@ -43,9 +43,9 @@ export function setDirection(direction, id, sequence) {
 }
 
 
-export function clearBuffer() {
+export function clearPositions() {
 	return {
-        type: CLEAR_BUFFER
+        type: CLEAR_POSITIONS
     }
 }
 

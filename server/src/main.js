@@ -1,6 +1,6 @@
 import startServer from './server'
 import makeStore from './store'
-import { update, clearBuffer, endCooldown } from './game/action_creators'
+import { update, clearPositions, endCooldown } from './game/action_creators'
 import { STATE_COOLDOWN, STATE_PLAY } from './game/core'
 
 
@@ -21,7 +21,6 @@ function physicsUpdate() {
 	lastInv = now
 	
 	store.dispatch(update(delta, GAMEAREA))
-	
 }
 
 
@@ -36,7 +35,7 @@ function serverUpdate() {
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
 		io.emit('gameState', makeOutput(newState))
-		store.dispatch(clearBuffer())
+		store.dispatch(clearPositions())
 		prevState = newState
 	}
 	

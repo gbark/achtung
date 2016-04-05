@@ -11,7 +11,7 @@ import { UPDATE
 	   , ADD_PLAYER
 	   , REMOVE_PLAYER
 	   , SET_DIRECTION
-       , CLEAR_BUFFER
+       , CLEAR_POSITIONS
        , END_COOLDOWN } from './action_creators'
 
 export default function reducer(state = Map({ sequence: 0 }), action) {
@@ -38,11 +38,11 @@ export default function reducer(state = Map({ sequence: 0 }), action) {
             
             return state
             
-        case CLEAR_BUFFER:
+        case CLEAR_POSITIONS:
             let players = state.get('players')
             if (players) {
                 players = players.map(p => {
-                    return p.set('pathBuffer', List())
+                    return p.set('latestPositions', List())
                             .set('puncture', 0)
                 })
                 

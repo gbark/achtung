@@ -60,7 +60,7 @@ mode s =
 player : Decoder PlayerLight
 player =
     map PlayerLight ("id" := string)
-        `apply` ("pathBuffer" := array positionOnline)
+        `apply` ("latestPositions" := array positionOnline)
         `apply` (maybe ("angle" := float))
         `apply` (maybe ("alive" := bool))
         `apply` (maybe ("score" := int))

@@ -95,8 +95,7 @@ updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
             |> List.head 
             |> Maybe.withDefault defaultPlayer
             |> resetAtNewRound state nextState
-            |> syncBuffers serverOpponent stale
-            |> updatePathAndBuffer nextState delta
+            |> updatePathAndBuffer serverOpponent nextState delta stale
             
         log = Debug.log "opponent path length" (List.length localOpponent.path)
         
@@ -109,7 +108,7 @@ updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
                         }
     
     
-updatePathAndBuffer nextState delta player =
+updatePathAndBuffer { latestPositions } nextState delta stale player =
     case nextState == Play of
         False ->
             player
@@ -117,15 +116,16 @@ updatePathAndBuffer nextState delta player =
         True ->
             let 
                 freshPositions = 
-                    Array.filter (isPrediction >> not) player.pathBuffer
-                    |> Array.toList 
-                    |> List.map asPosition
-                    
-                oldPredictions =
-                    Array.filter isPrediction player.pathBuffer
+                    if stale then [] else List.map asPosition <| Array.toList latestPositions
+                    -- case stale of 
+                    --     True ->
+                    --         []
+                            
+                    --     False ->
+                    --         List.map asPosition <| Array.toList latestPositions
                     
                 numberOfNewPredictions = 
-                    (Array.length oldPredictions)-(List.length freshPositions) + 1
+                    (player.predictedPositions)-(List.length freshPositions) + 1
                     
                 newPredictions = 
                     makePredictions (List.head freshPositions) delta numberOfNewPredictions player    
@@ -133,11 +133,11 @@ updatePathAndBuffer nextState delta player =
                 path =
                     (List.map asPosition newPredictions)                     -- Append new predictions
                     ++ freshPositions                                        -- Append positions recieved from server
-                    ++ (List.drop (Array.length oldPredictions) player.path) -- Remove old predictions               
+                    ++ (List.drop player.predictedPositions player.path)     -- Remove old predictions               
                     
             in
                 { player | path = path
-                         , pathBuffer = Array.fromList newPredictions
+                         , predictedPositions = numberOfNewPredictions
                          }
                  
                  
@@ -196,7 +196,7 @@ generatePrediction delta angle seed =
 setInitialPath serverPlayer localPlayer =
     case List.isEmpty localPlayer.path of
         True ->
-            { localPlayer | path = Array.toList <| Array.map asPosition serverPlayer.pathBuffer }
+            { localPlayer | path = Array.toList <| Array.map asPosition serverPlayer.latestPositions }
             
         False ->
             localPlayer
@@ -237,22 +237,13 @@ resetAtNewRound state nextState player =
     case nextState == Play && state /= Play of
         True ->
             { player | path = defaultPlayer.path
-                     , pathBuffer = defaultPlayer.pathBuffer
+                     , predictedPositions = defaultPlayer.predictedPositions
                      , angle = defaultPlayer.angle
                      , direction = defaultPlayer.direction
                      }
         
         False ->
             player
-             
-
-syncBuffers server stale player =
-    case stale of
-        True ->
-            player
-            
-        False ->
-            { player | pathBuffer = Array.append server.pathBuffer player.pathBuffer }
 
 
 asPosition : PositionOnline -> Position (Float, Float)

@@ -16,7 +16,7 @@ const SAFETY_MARGIN = 0
 
 export const DEFAULT_PLAYER = Map({
 	path: List(),
-    pathBuffer: List(),
+    latestPositions: List(),
 	angle: 0,
 	direction: STRAIGHT,
 	alive: true,
@@ -228,7 +228,7 @@ function move(delta, serverSequence, player) {
     return player.set('angle', angle)
                  .set('path', path)
                  .set('puncture', holes)
-                 .set('pathBuffer', player.get('pathBuffer').unshift(nextPosition))
+                 .set('latestPositions', player.get('latestPositions').unshift(nextPosition))
 }
 
 
@@ -328,7 +328,7 @@ function initPlayer(gamearea, player) {
     
     return player.set('angle', angle)
                  .set('path', path)
-                 .set('pathBuffer', path)
+                 .set('latestPositions', path)
                  .set('alive', true)
                  .set('sequence', 0)
 }

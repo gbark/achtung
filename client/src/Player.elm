@@ -17,7 +17,7 @@ import Config
 type alias Player =
     { id: String
     , path: List (Position (Float, Float))
-    , pathBuffer: Array PositionOnline
+    , predictedPositions: Int
     , angle: Float
     , direction: Direction
     , alive: Bool
@@ -32,7 +32,7 @@ type alias Player =
 -- Light weight Player object for sending over the wire
 type alias PlayerLight =
     { id: String
-    , pathBuffer: Array PositionOnline
+    , latestPositions: Array PositionOnline
     , angle: Maybe Float
     , alive: Maybe Bool
     , score: Maybe Int
@@ -51,7 +51,7 @@ defaultPlayer : Player
 defaultPlayer =
     { id = "1"
     , path = []
-    , pathBuffer = Array.empty
+    , predictedPositions = 0
     , angle = 0
     , direction = Straight
     , alive = True
@@ -100,7 +100,7 @@ updatePlayer delta gamearea players player =
             else if winner then
                 { player' | score = player'.score + 1
                           , alive = False
-                }
+                          }
 
             -- Single player (survivor mode)
             else if length players == 1 then
@@ -167,7 +167,7 @@ move delta shouldPuncture player =
                 in
                     { player | angle = angle
                              , path = Visible (nextX, nextY) :: path'
-                    }
+                             }
             
             Nothing ->
                 { player | angle = angle }
