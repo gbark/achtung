@@ -199,9 +199,9 @@ function updatePlayer(delta, gamearea, serverSequence, opponents, player) {
 function move(delta, serverSequence, player) {
     const direction = player.get('direction')
     let angle = player.get('angle')
-    if (direction == LEFT) {
+    if (direction === LEFT) {
         angle = angle + MAX_ANGLE_CHANGE
-    } else if (direction == RIGHT) {
+    } else if (direction === RIGHT) {
         angle = angle + -MAX_ANGLE_CHANGE
     }
     
