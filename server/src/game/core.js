@@ -114,8 +114,6 @@ function updatePlayers(delta, gamearea, state, nextState, sequence, players = Ma
                 const player = state === STATE_WAITING_PLAYERS ? initPlayer(gamearea, p) : p
                 return updatePlayer(delta, gamearea, sequence, opponents, player)
             })
-            
-			
 			
         case STATE_ROUNDOVER:
 			return players.map((p, id) => {
@@ -123,13 +121,9 @@ function updatePlayers(delta, gamearea, state, nextState, sequence, players = Ma
                 const player = updatePlayer(delta, gamearea, sequence, opponents, p)
                 return initPlayer(gamearea, player)
             })
-            
-			
 			
         case STATE_COOLDOWN:
 			return players
-            
-			
 			
         case STATE_COOLDOWN_OVER:
 			return players
@@ -163,6 +157,7 @@ function updateSequence(state, nextState, sequence = -1) {
 
 function updatePlayer(delta, gamearea, serverSequence, opponents, player) {
     if (!player.get('alive')) {
+        console.log('im ded',  player.get('path').toJS())
         return player
     }
         

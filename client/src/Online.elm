@@ -97,7 +97,12 @@ updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
             |> resetAtNewRound state nextState
             |> updatePathAndBuffer serverOpponent nextState delta stale
             
-        log = Debug.log "opponent path length" (List.length localOpponent.path)
+        -- log = Debug.log "opponent path length" (List.length localOpponent.path)
+        
+        logB = if nextState == Roundover && state == Play then
+                Debug.log "round over" localOpponent.path
+            else
+                Debug.log "round not over" localOpponent.path
         
     in
         { localOpponent | id = serverOpponent.id
@@ -116,19 +121,26 @@ updatePathAndBuffer { latestPositions } nextState delta stale player =
         True ->
             let 
                 freshPositions = 
-                    if stale then [] else List.map asPosition <| Array.toList latestPositions
-                    -- case stale of 
-                    --     True ->
-                    --         []
-                            
-                    --     False ->
-                    --         List.map asPosition <| Array.toList latestPositions
+                    if stale then 
+                        [] 
+                        
+                    else 
+                        List.map asPosition (Array.toList latestPositions)
                     
                 numberOfNewPredictions = 
-                    (player.predictedPositions)-(List.length freshPositions) + 1
+                    (player.predictedPositions)-(List.length freshPositions)
+                    
+                numberOfNewPredictions' = 
+                    if numberOfNewPredictions < 0 then 
+                        0 
+                        
+                    else 
+                        numberOfNewPredictions
                     
                 newPredictions = 
-                    makePredictions (List.head freshPositions) delta numberOfNewPredictions player    
+                    makePredictions (List.head freshPositions) delta numberOfNewPredictions' player
+                    
+                log = Debug.log ("newPredictions: " ++ (toString (List.length newPredictions)) ++ " freshPositions: " ++ (toString (List.length freshPositions))) True  
             
                 path =
                     (List.map asPosition newPredictions)                     -- Append new predictions
@@ -137,7 +149,7 @@ updatePathAndBuffer { latestPositions } nextState delta stale player =
                     
             in
                 { player | path = path
-                         , predictedPositions = numberOfNewPredictions
+                         , predictedPositions = numberOfNewPredictions'
                          }
                  
                  

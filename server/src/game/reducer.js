@@ -29,14 +29,15 @@ export default function reducer(state = Map({ sequence: 0 }), action) {
         case REMOVE_PLAYER:
 			return state.deleteIn(['players'], action.id)
             
-        case SET_DIRECTION:
-            if (state.getIn(['players', action.id])) {
+        case SET_DIRECTION:            
+            if (!state.getIn(['players', action.id])) {
                 return state
-                    .setIn(['players', action.id, 'sequence'], action.sequence)
-                    .setIn(['players', action.id, 'direction'], action.direction)
             }
             
             return state
+                    .setIn(['players', action.id, 'sequence'], action.sequence)
+                    .setIn(['players', action.id, 'direction'], action.direction)
+            
             
         case CLEAR_POSITIONS:
             let players = state.get('players')

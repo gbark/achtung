@@ -30,3 +30,11 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 	- [ ] Only send game.player.alive if it has changed
 	- [ ] Only send game.player.score if it has changed
 	- [ ] Only send game.player.color if it has changed
+
+## Bugs
+
+* [ ] First X no of positions are some times not rendered on client
+* [ ] Client doesnt clean up fake positions
+* [ ] Client some times predictively render a position after round is over
+* [ ] Client some times doesnt render the last real position
+* [ ] Client prediction is not very accurate. Off by ~0.5 points compared to server for a player moving straight.
