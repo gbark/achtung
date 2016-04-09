@@ -82,7 +82,9 @@ function forcePushStateAtRoundStart(state) {
 store.subscribe(() => {
 	const state = store.getState()
 	startNewRoundCountdown(state)
-	forcePushStateAtRoundStart(state)
+    
+    // Shut off. Seems to cause race condition.
+	//forcePushStateAtRoundStart(state)
 })
 
 

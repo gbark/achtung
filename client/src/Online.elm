@@ -3,7 +3,6 @@ module Online where
 import Set
 import Char
 import Color
-import Array exposing (Array)
 import Maybe exposing (withDefault)
 
 import Input exposing (Input)
@@ -33,7 +32,7 @@ update ({ gamearea, server, serverId } as input) game =
                 sequence =
                     updateSequence tickObject game.sequence
                     
-                log = Debug.log "sequence" game.sequence
+                -- log = Debug.log "sequence" game.sequence
                     
             in
                 { game | players = self ++ opponents
@@ -77,7 +76,7 @@ updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
                     |> setInitialAngle serverPlayer
                     |> mapInput keys                
                     
-                log = Debug.log "self path length" (List.length localPlayer'.path)
+                -- log = Debug.log "self path length" (List.length localPlayer'.path)
                             
             in
                 if nextState == Play then
@@ -89,67 +88,72 @@ updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
 
 updateOpponent : TickObject -> PlayerLight -> Player
 updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
-    let 
-        localOpponent = 
-            List.filter (.id >> (==) serverOpponent.id) (snd localPlayers)
-            |> List.head 
-            |> Maybe.withDefault defaultPlayer
-            |> resetAtNewRound state nextState
-            |> updatePathAndBuffer serverOpponent nextState delta stale
-            
-        -- log = Debug.log "opponent path length" (List.length localOpponent.path)
+    List.filter (.id >> (==) serverOpponent.id) (snd localPlayers)
+        |> List.head 
+        |> Maybe.withDefault defaultPlayer
+        |> resetAtNewRound state nextState
+        |> mergeWithDefaults serverOpponent
+        |> updatePathAndBuffer serverOpponent nextState delta stale
+
+    -- log = Debug.log "opponent path length" (List.length localOpponent.path)
+                        
+mergeWithDefaults serverOpponent localOpponent =
+    { localOpponent | id = serverOpponent.id
+                    , angle = withDefault localOpponent.angle serverOpponent.angle
+                    , alive = withDefault localOpponent.alive serverOpponent.alive
+                    , score = withDefault localOpponent.score serverOpponent.score
+                    , color = withDefault localOpponent.color serverOpponent.color 
+                    }
+
+
+resetAtNewRound state nextState player =
+    case nextState == Play && state /= Play of
+        True ->
+            let log = Debug.log "path" player.path in
+            { player | path = defaultPlayer.path
+                     , predictedPositions = defaultPlayer.predictedPositions
+                     , angle = defaultPlayer.angle
+                     , direction = defaultPlayer.direction
+                     }
         
-        logB = if nextState == Roundover && state == Play then
-                Debug.log "round over" localOpponent.path
-            else
-                Debug.log "round not over" localOpponent.path
-        
-    in
-        { localOpponent | id = serverOpponent.id
-                        , angle = withDefault localOpponent.angle serverOpponent.angle
-                        , alive = withDefault localOpponent.alive serverOpponent.alive
-                        , score = withDefault localOpponent.score serverOpponent.score
-                        , color = withDefault localOpponent.color serverOpponent.color 
-                        }
+        False ->
+            player
     
     
 updatePathAndBuffer { latestPositions } nextState delta stale player =
-    case nextState == Play of
+    case nextState == Play && player.alive of
         False ->
             player
             
         True ->
             let 
-                freshPositions = 
+                latestPositions' = 
                     if stale then 
                         [] 
                         
                     else 
-                        List.map asPosition (Array.toList latestPositions)
-                    
-                numberOfNewPredictions = 
-                    (player.predictedPositions)-(List.length freshPositions)
-                    
-                numberOfNewPredictions' = 
-                    if numberOfNewPredictions < 0 then 
-                        0 
-                        
-                    else 
-                        numberOfNewPredictions
+                        latestPositions
                     
                 newPredictions = 
-                    makePredictions (List.head freshPositions) delta numberOfNewPredictions' player
+                    if (List.length latestPositions') > player.predictedPositions then 
+                        []
+                        
+                    else if (List.length latestPositions') == player.predictedPositions then
+                        makePredictions (List.head latestPositions') delta 1 player
+                        
+                    else 
+                        makePredictions (List.head latestPositions') delta (player.predictedPositions + 1) player
                     
-                log = Debug.log ("newPredictions: " ++ (toString (List.length newPredictions)) ++ " freshPositions: " ++ (toString (List.length freshPositions))) True  
+                -- log = Debug.log ("newPredictions: " ++ (toString (List.length newPredictions)) ++ " latestPositions': " ++ (toString (List.length latestPositions'))) True  
             
                 path =
-                    (List.map asPosition newPredictions)                     -- Append new predictions
-                    ++ freshPositions                                        -- Append positions recieved from server
+                    newPredictions                                           -- Append new predictions
+                    ++ latestPositions'                                      -- Append positions recieved from server
                     ++ (List.drop player.predictedPositions player.path)     -- Remove old predictions               
                     
             in
                 { player | path = path
-                         , predictedPositions = numberOfNewPredictions'
+                         , predictedPositions = List.length newPredictions
                          }
                  
                  
@@ -178,7 +182,7 @@ predictionCombiner delta angle seed _ acc =
                     prediction :: acc
         
         p :: _ ->
-            case generatePrediction delta angle (asPosition p) of
+            case generatePrediction delta angle p of
                 Nothing ->
                     acc
                 
@@ -202,13 +206,13 @@ generatePrediction delta angle seed =
                 Nothing
                 
             p :: ps ->
-                Just (Prediction p)
+                Just p
                       
 
 setInitialPath serverPlayer localPlayer =
     case List.isEmpty localPlayer.path of
         True ->
-            { localPlayer | path = Array.toList <| Array.map asPosition serverPlayer.latestPositions }
+            { localPlayer | path = serverPlayer.latestPositions }
             
         False ->
             localPlayer
@@ -237,25 +241,12 @@ isStale previousServerTime serverTime =
                 Nothing ->
                     False
                     
-                Just lt -> 
-                    if st > lt then
+                Just pst -> 
+                    if st > pst then
                         False
                         
                     else
                         True
-
-
-resetAtNewRound state nextState player =
-    case nextState == Play && state /= Play of
-        True ->
-            { player | path = defaultPlayer.path
-                     , predictedPositions = defaultPlayer.predictedPositions
-                     , angle = defaultPlayer.angle
-                     , direction = defaultPlayer.direction
-                     }
-        
-        False ->
-            player
 
 
 asPosition : PositionOnline -> Position (Float, Float)

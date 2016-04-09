@@ -109,18 +109,20 @@ function updatePlayers(delta, gamearea, state, nextState, sequence, players = Ma
 			return players
 			
         case STATE_PLAY:
-            return players.map((p, id) => {
-                const opponents = players.delete(id)
-                const player = state === STATE_WAITING_PLAYERS ? initPlayer(gamearea, p) : p
-                return updatePlayer(delta, gamearea, sequence, opponents, player)
+            const nextPlayers = players.map((p, id) => {
+                if (state !== STATE_PLAY) {
+                    p = initPlayer(gamearea, p) 
+                }
+                
+                return updatePlayer(delta, gamearea, sequence, players.delete(id), p)
+            })
+            
+            return nextPlayers.map((p, id) => {
+                return awardWinner(nextPlayers.delete(id), p)
             })
 			
         case STATE_ROUNDOVER:
-			return players.map((p, id) => {
-                const opponents = players.delete(id)
-                const player = updatePlayer(delta, gamearea, sequence, opponents, p)
-                return initPlayer(gamearea, player)
-            })
+			return players
 			
         case STATE_COOLDOWN:
 			return players
@@ -157,7 +159,6 @@ function updateSequence(state, nextState, sequence = -1) {
 
 function updatePlayer(delta, gamearea, serverSequence, opponents, player) {
     if (!player.get('alive')) {
-        console.log('im ded',  player.get('path').toJS())
         return player
     }
         
@@ -171,23 +172,32 @@ function updatePlayer(delta, gamearea, serverSequence, opponents, player) {
               return hitSnake(path, position)
           }),
           
-          hw = hitWall(position, gamearea),
-          
-          winner = opponents.filter(p => { 
-              return p.get('alive') === true 
-          }).count() < 1
-          
+          hw = hitWall(position, gamearea)
           
     if (hs || hw) {
+        console.log('im ded',  player.get('path').toJS())
         return nextPlayer.set('alive', false)
-        
-    } else if (winner) {
-        return nextPlayer.set('alive', false)
-                         .set('score', player.get('score') + 1)                    
-    } 
-    
+    }
     
     return nextPlayer
+}
+
+function awardWinner(opponents, player) {
+    if (!player.get('alive')) {
+        return player
+    }
+    
+    const winner = opponents.filter(p => { 
+                        return p.get('alive') === true 
+                    }).count() < 1
+          
+    if (winner) {
+        console.log('i won',  player.get('path').toJS())
+        return player.set('alive', false)
+                     .set('score', player.get('score') + 1)                    
+    }
+    
+    return player
 }
 
 
@@ -200,7 +210,7 @@ function move(delta, serverSequence, player) {
         angle = angle + -MAX_ANGLE_CHANGE
     }
     
-    console.log('serverSequence: ' + serverSequence + ' playerSequence:' + player.get('sequence'))
+    // console.log('serverSequence: ' + serverSequence + ' playerSequence:' + player.get('sequence'))
     // console.log('serverSequence - playerSequence: ' + (serverSequence - player.get('sequence')))
     
     const vx = Math.cos(angle * Math.PI / 180),

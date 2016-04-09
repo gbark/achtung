@@ -17,6 +17,7 @@ decode json =
 fromResult result =
     case result of
         Ok value ->
+            -- let log = Debug.log "success" value in
             value
         
         Err msg ->
@@ -60,7 +61,7 @@ mode s =
 player : Decoder PlayerLight
 player =
     map PlayerLight ("id" := string)
-        `apply` ("latestPositions" := array positionOnline)
+        `apply` ("latestPositions" := list position)
         `apply` (maybe ("angle" := float))
         `apply` (maybe ("alive" := bool))
         `apply` (maybe ("score" := int))
@@ -73,20 +74,20 @@ apply func value =
     object2 (<|) func value
     
         
-positionOnline : Decoder PositionOnline
-positionOnline =
+position : Decoder (Position a)
+position =
     ("visible" := bool) `andThen` visibility
     
             
-visibility : Bool -> Decoder PositionOnline
+visibility : Bool -> Decoder (Position a)
 visibility visible =
     if visible then
-        object2 (\x y -> Actual (Visible (x, y)))
+        object2 (\x y -> Visible (x, y))
             ("x" := float)
             ("y" := float)
                 
     else
-        object2 (\x y -> Actual (Hidden (x, y)))
+        object2 (\x y -> Hidden (x, y))
             ("x" := float)
             ("y" := float)
             

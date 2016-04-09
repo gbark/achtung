@@ -32,7 +32,7 @@ type alias Player =
 -- Light weight Player object for sending over the wire
 type alias PlayerLight =
     { id: String
-    , latestPositions: Array PositionOnline
+    , latestPositions: List (Position (Float, Float))
     , angle: Maybe Float
     , alive: Maybe Bool
     , score: Maybe Int
