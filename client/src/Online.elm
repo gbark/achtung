@@ -93,7 +93,7 @@ updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
         |> Maybe.withDefault defaultPlayer
         |> resetAtNewRound state nextState
         |> mergeWithDefaults serverOpponent
-        |> updatePathAndBuffer serverOpponent nextState delta stale
+        |> updatePathAndBuffer serverOpponent state nextState delta stale
 
     -- log = Debug.log "opponent path length" (List.length localOpponent.path)
                         
@@ -120,20 +120,17 @@ resetAtNewRound state nextState player =
             player
     
     
-updatePathAndBuffer { latestPositions } nextState delta stale player =
-    case nextState == Play && player.alive of
-        False ->
-            player
+updatePathAndBuffer { latestPositions } state nextState delta stale player = 
+    let latestPositions' = 
+        if stale then 
+            [] 
             
-        True ->
+        else 
+            latestPositions
+            
+    in  
+        if nextState == Play && player.alive then
             let 
-                latestPositions' = 
-                    if stale then 
-                        [] 
-                        
-                    else 
-                        latestPositions
-                    
                 newPredictions = 
                     if (List.length latestPositions') > player.predictedPositions then 
                         []
@@ -153,8 +150,16 @@ updatePathAndBuffer { latestPositions } nextState delta stale player =
                     
             in
                 { player | path = path
-                         , predictedPositions = List.length newPredictions
-                         }
+                            , predictedPositions = List.length newPredictions
+                            }
+        else 
+            reconcile latestPositions' player             
+                
+
+reconcile latestPositions player =
+    { player | path = latestPositions ++ (List.drop player.predictedPositions player.path)
+             , predictedPositions = 0
+             }
                  
                  
 makePredictions seed delta diff player =

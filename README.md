@@ -34,7 +34,7 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 ## Bugs
 
 * [x] First X no of positions are some times not rendered on client
-* [ ] Client doesnt clean up fake positions
-* [ ] Client some times predictively render a position after round is over
-* [ ] Client some times doesnt render the last real position
+* [x] Client doesnt clean up fake positions
+* [x] Client some times predictively render a position after round is over
+* [x] Client some times doesnt render the last real position
 * [ ] Client prediction is not very accurate. Off by ~0.5 points compared to server for a player moving straight.
