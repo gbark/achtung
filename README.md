@@ -11,8 +11,10 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 ## Multiplayer Todo
 
 * [x] Build authoritative game server using Node/SocketIO/Immutable/Redux
-* [x] Stream client keyboard input to server for processing
-* [x] Render own player on client
+* [x] Stream client keyboard input to server for processing. Include a sequence timestamp.
+* [ ] On the server, apply client input to a rolled back game state matching the timestamp. Then move players back to their correct/current positions.
+* [x] Render own player on client. 
+* [ ] Reconcile own players actual positions when they arrive from the server.
 * [x] Predictively render opponents on client using *dead reckoning*. Reconcile with actual positions when they arrive from the server.
 * [ ] Push holes in snake from server to client
 * [ ] Introduce game instances to server to handle multiple ongoing games
@@ -38,3 +40,5 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 * [x] Client some times predictively render a position after round is over
 * [x] Client some times doesnt render the last real position
 * [ ] Client prediction is not very accurate. Off by ~0.5 points compared to server for a player moving straight.
+* [ ] Intermittent - Game is not started when enough players have joined
+* [ ] Opponents are not moving smoothly enough
