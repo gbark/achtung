@@ -10,7 +10,7 @@ let prevState = store.getState()
 
 
 const GAMEAREA = [500, 500]
-const COOLDOWN_TIME = 1500
+const COOLDOWN_TIME = 2000
 
 
 // calculate physics and game state. loop at same interval as clients

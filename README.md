@@ -33,7 +33,7 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 
 ## Bugs
 
-* [ ] First X no of positions are some times not rendered on client
+* [x] First X no of positions are some times not rendered on client
 * [ ] Client doesnt clean up fake positions
 * [ ] Client some times predictively render a position after round is over
 * [ ] Client some times doesnt render the last real position
