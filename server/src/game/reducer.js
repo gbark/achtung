@@ -13,8 +13,15 @@ import { UPDATE
 	   , SET_DIRECTION
        , CLEAR_POSITIONS
        , END_COOLDOWN } from './action_creators'
+       
 
-export default function reducer(state = Map({ sequence: 0 }), action) {
+const DEFAULT_GAME = Map({
+	players: [], 
+    sequence: 0
+})       
+
+
+export default function reducer(state = DEFAULT_GAME, action) {
     switch(action.type) {
         case UPDATE:
             return update(action.delta, action.gamearea, state)
@@ -34,7 +41,7 @@ export default function reducer(state = Map({ sequence: 0 }), action) {
                 return state
             }
             
-            console.log('server seq-player seq ' + state.get('sequence') + ' ' + action.sequence)
+            console.log('server seq-player seq ', (action.sequence-state.get('sequence')))
             
             return state
                     .setIn(['players', action.id, 'sequence'], action.sequence)
@@ -42,17 +49,13 @@ export default function reducer(state = Map({ sequence: 0 }), action) {
             
             
         case CLEAR_POSITIONS:
-            let players = state.get('players')
-            if (players) {
-                players = players.map(p => {
-                    return p.set('latestPositions', List())
-                            .set('puncture', 0)
-                })
-                
-                return state.set('players', players)
-            }
+            const players = state.get('players').map(p => {
+                return p.set('latestPositions', List())
+                        .set('puncture', 0)
+                        .set('sequence', -1)
+            })
             
-            return state
+            return state.set('players', players)
             
         case END_COOLDOWN:
             return state.set('state', STATE_COOLDOWN_OVER)

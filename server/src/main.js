@@ -9,7 +9,6 @@ const io = startServer(store)
 let prevState = store.getState()
 
 
-const GAMEAREA = [500, 500]
 const COOLDOWN_TIME = 2000
 
 
@@ -20,12 +19,13 @@ function physicsUpdate() {
 	const delta = (now - lastInv)/1000
 	lastInv = now
 	
-	store.dispatch(update(delta, GAMEAREA))
+	store.dispatch(update(delta, store.get('gamearea')))
 }
 
 
 // push state to clients. loop at 45ms interval
 let updating = false
+let seqAtLastUpdate = 0
 function serverUpdate() {
 	if (updating) {
 		return
@@ -34,6 +34,8 @@ function serverUpdate() {
 	
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
+		console.log('diff', (newState.get('sequence')-seqAtLastUpdate))
+		seqAtLastUpdate = newState.get('sequence')
 		io.emit('gameState', makeOutput(newState))
 		store.dispatch(clearPositions())
 		prevState = newState
@@ -52,7 +54,6 @@ function makeOutput(state) {
 	
 	return state
 			.set('players', players)
-			.set('gamearea', GAMEAREA)
 			.set('serverTime', +new Date())
 			.toJS()
 }
@@ -89,4 +90,4 @@ store.subscribe(() => {
 
 
 setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
-setInterval(serverUpdate, 45)
+setInterval(serverUpdate, 105)

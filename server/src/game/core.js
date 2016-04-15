@@ -22,7 +22,7 @@ export const DEFAULT_PLAYER = Map({
 	alive: true,
 	score: 0,
     color: null,
-    sequence: 0
+    sequence: -1
 })
 
 
@@ -267,9 +267,7 @@ function puncture(path, width) {
         
           punctured = toPuncture.map(p => {
               return {
-                  // Use ...p
-                  x: p.x,
-                  y: p.y,
+                  ...p,
                   visible: false
               }
           })
