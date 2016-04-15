@@ -175,7 +175,7 @@ function updatePlayer(delta, gamearea, serverSequence, opponents, player) {
           hw = hitWall(position, gamearea)
           
     if (hs || hw) {
-        console.log('im ded',  player.get('path').toJS())
+        // console.log('im ded',  player.get('path').toJS())
         return nextPlayer.set('alive', false)
     }
     
@@ -192,7 +192,7 @@ function awardWinner(opponents, player) {
                     }).count() < 1
           
     if (winner) {
-        console.log('i won',  player.get('path').toJS())
+        // console.log('i won',  player.get('path').toJS())
         return player.set('alive', false)
                      .set('score', player.get('score') + 1)                    
     }

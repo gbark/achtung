@@ -34,6 +34,8 @@ export default function reducer(state = Map({ sequence: 0 }), action) {
                 return state
             }
             
+            console.log('server seq-player seq ' + state.get('sequence') + ' ' + action.sequence)
+            
             return state
                     .setIn(['players', action.id, 'sequence'], action.sequence)
                     .setIn(['players', action.id, 'direction'], action.direction)

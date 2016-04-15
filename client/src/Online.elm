@@ -150,16 +150,12 @@ updatePathAndBuffer { latestPositions } state nextState delta stale player =
                     
             in
                 { player | path = path
-                            , predictedPositions = List.length newPredictions
-                            }
+                         , predictedPositions = List.length newPredictions
+                         }
         else 
-            reconcile latestPositions' player             
-                
-
-reconcile latestPositions player =
-    { player | path = latestPositions ++ (List.drop player.predictedPositions player.path)
-             , predictedPositions = 0
-             }
+            { player | path = latestPositions ++ (List.drop player.predictedPositions player.path)
+                     , predictedPositions = 0
+                     }            
                  
                  
 makePredictions seed delta diff player =
