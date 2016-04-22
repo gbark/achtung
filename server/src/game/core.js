@@ -26,12 +26,12 @@ export const DEFAULT_PLAYER = Map({
 })
 
 
-export function update(delta, gamearea, game) {
+export function update(delta, game) {
 	const nextState = updateState(game.get('players'), game.get('state')),
           
           nextSequence = updateSequence(game.get('state'), nextState, game.get('sequence')),
 	
-		  nextPlayers = updatePlayers(delta, gamearea, game.get('state'), nextState, nextSequence, game.get('players')),
+		  nextPlayers = updatePlayers(delta, game.get('gamearea'), game.get('state'), nextState, nextSequence, game.get('players')),
 		  
 		  nextRound = updateRound(game.get('state'), nextState, game.get('round'))
     
@@ -307,8 +307,8 @@ function hitWall(position, gamearea) {
         return false
     }
     
-    const width = gamearea[0],
-          height = gamearea[1]
+    const width = gamearea.get(0),
+          height = gamearea.get(1)
     
     if (position.x >= (width / 2)) {
         return true
@@ -344,8 +344,8 @@ function randomAngle() {
 
 
 function randomPosition(gamearea) {
-    const width = gamearea[0] - SAFETY_MARGIN,
-          height = gamearea[1] - SAFETY_MARGIN,
+    const width = gamearea.get(0) - SAFETY_MARGIN,
+          height = gamearea.get(1) - SAFETY_MARGIN,
           x = Math.floor(Math.random() * width/2) + -(width/2),
           y = Math.floor(Math.random() * height/2) + -(height/2)
                     
@@ -365,3 +365,6 @@ function enoughPlayers(players) {
     
     return false
 }
+
+
+// function setDirection(player, opponents, )

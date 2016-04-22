@@ -7,11 +7,10 @@ export const END_COOLDOWN = 'achtung/END_COOLDOWN'
 
 
 
-export function update(delta, gamearea) {
+export function update(delta) {
 	return {
         type: UPDATE,
-        delta,
-        gamearea
+        delta
     }
 }
 

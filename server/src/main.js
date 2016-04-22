@@ -19,7 +19,7 @@ function physicsUpdate() {
 	const delta = (now - lastInv)/1000
 	lastInv = now
 	
-	store.dispatch(update(delta, store.get('gamearea')))
+	store.dispatch(update(delta))
 }
 
 

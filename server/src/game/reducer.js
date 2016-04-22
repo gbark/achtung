@@ -16,15 +16,16 @@ import { UPDATE
        
 
 const DEFAULT_GAME = Map({
-	players: [], 
-    sequence: 0
+	players: List(), 
+    sequence: 0,
+    gamearea: List([500, 500])
 })       
 
 
 export default function reducer(state = DEFAULT_GAME, action) {
     switch(action.type) {
         case UPDATE:
-            return update(action.delta, action.gamearea, state)
+            return update(action.delta, state)
             
         case ADD_PLAYER:
             if (state.get('state') === STATE_WAITING_PLAYERS) {
@@ -42,6 +43,7 @@ export default function reducer(state = DEFAULT_GAME, action) {
             }
             
             console.log('server seq-player seq ', (action.sequence-state.get('sequence')))
+            console.log('server seq-player path length ', (action.sequence-(state.getIn(['players', action.id], 'path').count())))
             
             return state
                     .setIn(['players', action.id, 'sequence'], action.sequence)
