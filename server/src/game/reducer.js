@@ -1,6 +1,6 @@
 import { List, Map } from 'immutable'
 
-import {STATE_WAITING_PLAYERS
+import { STATE_WAITING_PLAYERS
 	   , STATE_PLAY
 	   , STATE_ROUNDOVER
 	   , DEFAULT_PLAYER
@@ -16,9 +16,11 @@ import { UPDATE
        
 
 const DEFAULT_GAME = Map({
-	players: List(), 
+	players: Map(), 
     sequence: 0,
-    gamearea: List([500, 500])
+    gamearea: List([500, 500]),
+    state: STATE_WAITING_PLAYERS,
+    round: 1
 })       
 
 

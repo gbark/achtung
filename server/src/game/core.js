@@ -27,13 +27,13 @@ export const DEFAULT_PLAYER = Map({
 
 
 export function update(delta, game) {
-	const nextState = updateState(game.get('players'), game.get('state')),
+	const nextState = updateState(game),
           
-          nextSequence = updateSequence(game.get('state'), nextState, game.get('sequence')),
+          nextSequence = updateSequence(game, nextState),
 	
-		  nextPlayers = updatePlayers(delta, game.get('gamearea'), game.get('state'), nextState, nextSequence, game.get('players')),
+		  nextPlayers = updatePlayers(game, nextState, nextSequence, delta),
 		  
-		  nextRound = updateRound(game.get('state'), nextState, game.get('round'))
+		  nextRound = updateRound(game, nextState)
     
     
 	return game.set('state', nextState)
@@ -50,7 +50,9 @@ export const STATE_COOLDOWN = 'Cooldown'
 export const STATE_COOLDOWN_OVER = 'CooldownOver'
 
 
-function updateState(players, state = STATE_WAITING_PLAYERS) {
+function updateState(game) {
+    const state = game.get('state'),
+          players = game.get('players')
 	
 	switch(state) {
         case STATE_WAITING_PLAYERS:
@@ -102,7 +104,8 @@ function updateState(players, state = STATE_WAITING_PLAYERS) {
 }
 
 
-function updatePlayers(delta, gamearea, state, nextState, sequence, players = Map()) {
+function updatePlayers(game, nextState, sequence, delta) {
+    const players = game.get('players')
 	
 	switch(nextState) {
         case STATE_WAITING_PLAYERS:
@@ -110,11 +113,11 @@ function updatePlayers(delta, gamearea, state, nextState, sequence, players = Ma
 			
         case STATE_PLAY:
             const nextPlayers = players.map((p, id) => {
-                if (state !== STATE_PLAY) {
-                    p = initPlayer(gamearea, p) 
+                if (game.get('state') !== STATE_PLAY) {
+                    p = initPlayer(game.get('gamearea'), p) 
                 }
                 
-                return updatePlayer(delta, gamearea, sequence, players.delete(id), p)
+                return updatePlayer(delta, game.get('gamearea'), sequence, players.delete(id), p)
             })
             
             return nextPlayers.map((p, id) => {
@@ -136,23 +139,26 @@ function updatePlayers(delta, gamearea, state, nextState, sequence, players = Ma
 }
 
 
-function updateRound(state, nextState, round = 1) {
-    
-    if (state === STATE_PLAY && nextState === STATE_ROUNDOVER) {
-        return round + 1
+function updateRound(game, nextState) {
+    if (game.get('state') === STATE_PLAY && nextState === STATE_ROUNDOVER) {
+        return game.get('round') + 1
     }
     
-    return round
+    return game.get('round')
     
 }
 
 
-function updateSequence(state, nextState, sequence = -1) {
+function updateSequence(game, nextState) {
+    const sequence = game.get('sequence'),
+          state = game.get('state')
+          
     if (state !== STATE_PLAY && nextState === STATE_PLAY) {
         return 0
     } else if (nextState === STATE_PLAY) {
         return sequence + 1
     }
+    
     return sequence
 }
 
@@ -365,6 +371,3 @@ function enoughPlayers(players) {
     
     return false
 }
-
-
-// function setDirection(player, opponents, )
