@@ -43,12 +43,11 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 * [ ] Intermittent - Game is not started when enough players have joined
 * [ ] Opponents are not moving smoothly enough
 
+## Latency compensation - <https://developer.valvesoftware.com/wiki/Latency_Compensating_Methods_in_Client/Server_In-game_Protocol_Design_and_Optimization#Lag_Compensation>
 
-## Notes on server side input handling implementation
-1. Receive input (LEFT/RIGHT/STRAIGHT) with timestamp
-2. If nextState !== PLAY then break
-3. If timestamp is more than MAX_REWIND_ALLOWED then break
-4. Rewind all snakes to that timestamp
-5. Apply input to the snake
-6. Run updatePlayer on rewinded snakes. Iterate until they are moved back into present time.
-7. Done
+1. Receive input (LEFT/RIGHT/STRAIGHT)
+2. If nextState !== PLAY then do nothing
+3. Rewind all snakes to Datetime.now() - RTT
+4. Apply input to the snake
+5. Run updatePlayer on rewinded snakes. Iterate until they are moved back into present time.
+6. Done

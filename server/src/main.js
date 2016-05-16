@@ -1,4 +1,4 @@
-import startServer from './server'
+import { startServer, detectRoundTripTime } from './server'
 import makeStore from './store'
 import { update, clearPositions, endCooldown } from './game/action_creators'
 import { STATE_COOLDOWN, STATE_PLAY } from './game/core'
@@ -8,6 +8,9 @@ const store = makeStore()
 const io = startServer(store)
 let prevState = store.getState()
 
+setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
+setInterval(serverUpdate, 105)
+setInterval(() => { detectRoundTripTime(io) }, 500)
 
 const COOLDOWN_TIME = 2000
 
@@ -87,7 +90,3 @@ store.subscribe(() => {
     // Shut off. Seems to cause race condition.
 	//forcePushStateAtRoundStart(state)
 })
-
-
-setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
-setInterval(serverUpdate, 105)

@@ -34,4 +34,8 @@ game.ports.onlineGame.subscribe(() => {
 		game.ports.serverIdInput.send(id)
 	})
 	
+	ws.on('hey', () => {
+		ws.emit('ho')
+	})
+	
 })

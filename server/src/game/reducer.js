@@ -5,14 +5,17 @@ import { STATE_WAITING_PLAYERS
 	   , STATE_ROUNDOVER
 	   , DEFAULT_PLAYER
 	   , update
-       , STATE_COOLDOWN_OVER } from './core'
+       , STATE_COOLDOWN_OVER 
+       } from './core'
 
 import { UPDATE
 	   , ADD_PLAYER
 	   , REMOVE_PLAYER
 	   , SET_DIRECTION
        , CLEAR_POSITIONS
-       , END_COOLDOWN } from './action_creators'
+       , END_COOLDOWN
+       , SET_ROUND_TRIP_TIME 
+       } from './action_creators'
        
 
 const DEFAULT_GAME = Map({
@@ -63,6 +66,13 @@ export default function reducer(state = DEFAULT_GAME, action) {
             
         case END_COOLDOWN:
             return state.set('state', STATE_COOLDOWN_OVER)
+            
+        case SET_ROUND_TRIP_TIME:
+            if (!state.getIn(['players', action.id])) {
+                return state
+            }
+            console.log('rtt for user ' + action.id + ' is ' + action.time)
+            return state.setIn(['players', action.id, 'roundTripTime'], action.time)
             
         default:
             return state

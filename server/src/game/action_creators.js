@@ -4,6 +4,7 @@ export const REMOVE_PLAYER = 'achtung/REMOVE_PLAYER'
 export const SET_DIRECTION = 'achtung/SET_DIRECTION'
 export const CLEAR_POSITIONS = 'achtung/CLEAR_POSITIONS'
 export const END_COOLDOWN = 'achtung/END_COOLDOWN'
+export const SET_ROUND_TRIP_TIME = 'achtung/SET_ROUND_TRIP_TIME'
 
 
 
@@ -52,5 +53,14 @@ export function clearPositions() {
 export function endCooldown() {
 	return {
         type: END_COOLDOWN,
+    }
+}
+
+
+export function setRoundTripTime(id, time) {
+	return {
+        type: SET_ROUND_TRIP_TIME,
+        id,
+        time
     }
 }

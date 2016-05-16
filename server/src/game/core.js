@@ -9,7 +9,8 @@ export const DEFAULT_PLAYER = Map({
 	alive: true,
 	score: 0,
     color: null,
-    sequence: -1
+    sequence: -1,
+    roundTripTime: null
 })
 
 
