@@ -1,18 +1,5 @@
 import { List, Map } from 'immutable'
 
-const INITIAL_STATE = Map()
-const PLAYERS_REQUIRED = 2
-
-
-const STRAIGHT = 'Straight'
-const LEFT = 'Left'
-const RIGHT = 'Right'
-
-const MAX_ANGLE_CHANGE = 5
-const SPEED = 125
-const SNAKE_WIDTH = 3
-const SAFETY_MARGIN = 0
-
 
 export const DEFAULT_PLAYER = Map({
 	path: List(),
@@ -26,28 +13,32 @@ export const DEFAULT_PLAYER = Map({
 })
 
 
-export function update(delta, game) {
-	const nextState = updateState(game),
-          
-          nextSequence = updateSequence(game, nextState),
-	
-		  nextPlayers = updatePlayers(game, nextState, nextSequence, delta),
-		  
-		  nextRound = updateRound(game, nextState)
-    
-    
-	return game.set('state', nextState)
-			   .set('players', nextPlayers)
-			   .set('round', nextRound)
-               .set('sequence', nextSequence)
-}
-
-
 export const STATE_WAITING_PLAYERS = 'WaitingPlayers' 
 export const STATE_PLAY = 'Play'
 export const STATE_ROUNDOVER = 'Roundover'
 export const STATE_COOLDOWN = 'Cooldown'
 export const STATE_COOLDOWN_OVER = 'CooldownOver'
+
+
+export function update(delta, game) {
+	const nextState = updateState(game),
+          nextSequence = updateSequence(game, nextState)
+    
+	return game.set('state', nextState)
+			   .set('round', updateRound(game, nextState))
+               .set('sequence', nextSequence)
+			   .set('players', updatePlayers(game, nextState, nextSequence, delta))
+}
+
+
+const STRAIGHT = 'Straight'
+const LEFT = 'Left'
+const RIGHT = 'Right'
+const PLAYERS_REQUIRED = 2
+const MAX_ANGLE_CHANGE = 5
+const SPEED = 125
+const SNAKE_WIDTH = 3
+const SAFETY_MARGIN = 0
 
 
 function updateState(game) {
