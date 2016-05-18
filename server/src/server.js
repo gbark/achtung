@@ -2,7 +2,7 @@ import Server from 'socket.io'
 
 import { addPlayer
        , removePlayer
-       , setDirection
+       , addInput
        , setRoundTripTime
        } from './game/action_creators'
 
@@ -30,7 +30,7 @@ export function startServer(store) {
         
         socket
             .on('playerOutput', (data) => {
-                store.dispatch(setDirection(data.direction, id, data.sequence))
+                store.dispatch(addInput(data.direction, id, data.sequence))
             })
             .on('disconnect', () => {
                 console.log('-- socket.io: client disconnected. id: ', id)

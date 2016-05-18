@@ -1,7 +1,7 @@
 export const UPDATE = 'achtung/UPDATE'
 export const ADD_PLAYER = 'achtung/ADD_PLAYER'
 export const REMOVE_PLAYER = 'achtung/REMOVE_PLAYER'
-export const SET_DIRECTION = 'achtung/SET_DIRECTION'
+export const ADD_INPUT = 'achtung/ADD_INPUT'
 export const CLEAR_POSITIONS = 'achtung/CLEAR_POSITIONS'
 export const END_COOLDOWN = 'achtung/END_COOLDOWN'
 export const SET_ROUND_TRIP_TIME = 'achtung/SET_ROUND_TRIP_TIME'
@@ -33,9 +33,9 @@ export function removePlayer(id) {
 }
 
 
-export function setDirection(direction, id, sequence) {
+export function addInput(direction, id, sequence) {
 	return {
-        type: SET_DIRECTION,
+        type: ADD_INPUT,
         direction,
         id,
         sequence

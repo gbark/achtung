@@ -8,43 +8,49 @@ const store = makeStore()
 const io = startServer(store)
 let prevState = store.getState()
 
-setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
-setInterval(serverUpdate, 105)
-setInterval(() => { detectRoundTripTime(io) }, 500)
+export const PHYSICS_INTERVAL = 1000/35
+const SERVER_INTERVAL = 50
+const LATENCY_DETECTION_INTERVAL = 500
+const ROUND_COOLDOWN_TIME = 2000
 
-const COOLDOWN_TIME = 2000
+setInterval(physicsUpdate, STEP_INTERVAL) // 35 fps, same as on client
+setInterval(serverUpdate, SERVER_INTERVAL)
+setInterval(() => { detectRoundTripTime(io) }, LATENCY_DETECTION_INTERVAL)
 
 
-// calculate physics and game state. loop at same interval as clients
+
+// calculate physics and game state
 let lastInv = +new Date()
 function physicsUpdate() {
 	const now = +new Date()
 	const delta = (now - lastInv)/1000
 	lastInv = now
-	
+
 	store.dispatch(update(delta))
 }
 
 
-// push state to clients. loop at 45ms interval
+// push state to clients
 let updating = false
 let seqAtLastUpdate = 0
 function serverUpdate() {
 	if (updating) {
-		return
+		return false
 	}
 	updating = true
-	
+
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
-		console.log('diff', (newState.get('sequence')-seqAtLastUpdate))
+		// console.log('diff', (newState.get('sequence')-seqAtLastUpdate))
 		seqAtLastUpdate = newState.get('sequence')
 		io.emit('gameState', makeOutput(newState))
 		store.dispatch(clearPositions())
 		prevState = newState
 	}
-	
+
 	updating = false
+
+    return true
 }
 
 function makeOutput(state) {
@@ -54,7 +60,7 @@ function makeOutput(state) {
 			.remove('path')
 			.remove('direction')
 	}).toArray()
-	
+
 	return state
 			.set('players', players)
 			.set('serverTime', +new Date())
@@ -69,7 +75,7 @@ function startNewRoundCountdown(state) {
             countdown = setTimeout(() => {
                 store.dispatch(endCooldown())
                 countdown = null
-            }, COOLDOWN_TIME)
+            }, ROUND_COOLDOWN_TIME)
         }
     }
 }
@@ -86,7 +92,7 @@ function forcePushStateAtRoundStart(state) {
 store.subscribe(() => {
 	const state = store.getState()
 	startNewRoundCountdown(state)
-    
-    // Shut off. Seems to cause race condition.
-	//forcePushStateAtRoundStart(state)
+
+    // Seems to cause race condition?
+	forcePushStateAtRoundStart(state)
 })

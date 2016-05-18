@@ -17,27 +17,27 @@ update ({ gamearea, server, serverId } as input) game =
     case serverId of
         Nothing ->
             game
-            
+
         Just id ->
-            let 
+            let
                 tickObject =
                     makeTickObject input game id
-                
+
                 opponents =
                     List.map (updateOpponent tickObject) (snd tickObject.serverPlayers)
-                    
+
                 self =
                     updateSelf tickObject
-                    
+
                 sequence =
                     updateSequence tickObject game.sequence
-                    
+
                 -- log = Debug.log "sequence" game.sequence
-                    
+
             in
                 { game | players = self ++ opponents
                        , state = tickObject.nextState
-                       , gamearea = withDefault gamearea server.gamearea 
+                       , gamearea = withDefault gamearea server.gamearea
                        , round = withDefault game.round server.round
                        , serverTime = server.serverTime
                        , sequence = sequence
@@ -45,64 +45,60 @@ update ({ gamearea, server, serverId } as input) game =
 
 
 updateSequence { state, nextState } sequence =
-    if nextState == Play && state /= Play then 
-        0 
-        
+    if nextState == Play && state /= Play then
+        0
+
     else if nextState == Play then
         sequence + 1
-        
+
     else
         sequence
 
-           
+
 updateSelf { state, nextState, delta, keys, localPlayers, serverPlayers } =
     case fst serverPlayers of
         Nothing ->
             []
-            
+
         Just serverPlayer ->
-            let 
+            let
                 localPlayer =
                     Maybe.withDefault defaultPlayer (fst localPlayers)
-                    
-                localPlayer' = 
+
+                localPlayer' =
                     { localPlayer | id = serverPlayer.id
                                   , alive = withDefault localPlayer.alive serverPlayer.alive
                                   , score = withDefault localPlayer.score serverPlayer.score
-                                  , color = withDefault localPlayer.color serverPlayer.color 
+                                  , color = withDefault localPlayer.color serverPlayer.color
                                   }
                     |> resetAtNewRound state nextState
                     |> setInitialPath serverPlayer
                     |> setInitialAngle serverPlayer
-                    |> mapInput keys                
-                    
-                -- log = Debug.log "self path length" (List.length localPlayer'.path)
-                            
+                    |> mapInput keys
+
             in
                 if nextState == Play then
                     [move delta False localPlayer']
-                        
+
                 else
                     [localPlayer']
-            
+
 
 updateOpponent : TickObject -> PlayerLight -> Player
 updateOpponent { stale, delta, nextState, state, localPlayers } serverOpponent =
     List.filter (.id >> (==) serverOpponent.id) (snd localPlayers)
-        |> List.head 
+        |> List.head
         |> Maybe.withDefault defaultPlayer
         |> resetAtNewRound state nextState
         |> mergeWithDefaults serverOpponent
         |> updatePathAndBuffer serverOpponent state nextState delta stale
 
-    -- log = Debug.log "opponent path length" (List.length localOpponent.path)
-                        
 mergeWithDefaults serverOpponent localOpponent =
     { localOpponent | id = serverOpponent.id
                     , angle = withDefault localOpponent.angle serverOpponent.angle
                     , alive = withDefault localOpponent.alive serverOpponent.alive
                     , score = withDefault localOpponent.score serverOpponent.score
-                    , color = withDefault localOpponent.color serverOpponent.color 
+                    , color = withDefault localOpponent.color serverOpponent.color
                     }
 
 
@@ -115,116 +111,116 @@ resetAtNewRound state nextState player =
                      , angle = defaultPlayer.angle
                      , direction = defaultPlayer.direction
                      }
-        
+
         False ->
             player
-    
-    
-updatePathAndBuffer { latestPositions } state nextState delta stale player = 
-    let latestPositions' = 
-        if stale then 
-            [] 
-            
-        else 
+
+
+updatePathAndBuffer { latestPositions } state nextState delta stale player =
+    let latestPositions' =
+        if stale then
+            []
+
+        else
             latestPositions
-            
-    in  
+
+    in
         if nextState == Play && player.alive then
-            let 
-                newPredictions = 
-                    if (List.length latestPositions') > player.predictedPositions then 
+            let
+                newPredictions =
+                    if (List.length latestPositions') > player.predictedPositions then
                         []
-                        
+
                     else if (List.length latestPositions') == player.predictedPositions then
                         makePredictions (List.head latestPositions') delta 1 player
-                        
-                    else 
+
+                    else
                         makePredictions (List.head latestPositions') delta (player.predictedPositions + 1) player
-                    
-                -- log = Debug.log ("newPredictions: " ++ (toString (List.length newPredictions)) ++ " latestPositions': " ++ (toString (List.length latestPositions'))) True  
-            
+
+                -- log = Debug.log ("newPredictions: " ++ (toString (List.length newPredictions)) ++ " latestPositions': " ++ (toString (List.length latestPositions'))) True
+
                 path =
                     newPredictions                                           -- Append new predictions
                     ++ latestPositions'                                      -- Append positions recieved from server
-                    ++ (List.drop player.predictedPositions player.path)     -- Remove old predictions               
-                    
+                    ++ (List.drop player.predictedPositions player.path)     -- Remove old predictions
+
             in
                 { player | path = path
                          , predictedPositions = List.length newPredictions
                          }
-        else 
+        else
             { player | path = latestPositions ++ (List.drop player.predictedPositions player.path)
                      , predictedPositions = 0
-                     }            
-                 
-                 
+                     }
+
+
 makePredictions seed delta diff player =
-    case seed of 
-        Nothing -> 
+    case seed of
+        Nothing ->
             case player.path of
                 [] ->
                     []
-                    
+
                 p :: _ ->
                     List.foldr (predictionCombiner delta player.angle p) [] <| List.repeat 1 0
-        
+
         Just p ->
             List.foldr (predictionCombiner delta player.angle p) [] <| List.repeat diff 0
-                
+
 
 predictionCombiner delta angle seed _ acc =
-    case acc of 
+    case acc of
         [] ->
             case generatePrediction delta angle seed of
                 Nothing ->
                     acc
-                
+
                 Just prediction ->
                     prediction :: acc
-        
+
         p :: _ ->
             case generatePrediction delta angle p of
                 Nothing ->
                     acc
-                
+
                 Just prediction ->
                     prediction :: acc
 
-                    
+
 generatePrediction delta angle seed =
-    let 
+    let
         mockPlayer =
             { defaultPlayer | path = [seed]
                             , angle = angle
                             }
-        
-        { path } = 
+
+        { path } =
             move delta False mockPlayer
-            
-    in 
-        case path of 
+
+    in
+        case path of
             [] ->
                 Nothing
-                
+
             p :: ps ->
                 Just p
-                      
+
 
 setInitialPath serverPlayer localPlayer =
     case List.isEmpty localPlayer.path of
         True ->
             { localPlayer | path = serverPlayer.latestPositions }
-            
+
         False ->
             localPlayer
-            
-            
+
+
 setInitialAngle serverPlayer localPlayer =
     if localPlayer.angle == defaultPlayer.angle then
         case serverPlayer.angle of
-            Just angle -> 
+            Just angle ->
                 { localPlayer | angle = angle }
-                
+
             Nothing ->
                 localPlayer
 
@@ -232,33 +228,33 @@ setInitialAngle serverPlayer localPlayer =
         localPlayer
 
 
-isStale previousServerTime serverTime = 
+isStale previousServerTime serverTime =
     case serverTime of
         Nothing ->
             True
-            
+
         Just st ->
-            case previousServerTime of 
+            case previousServerTime of
                 Nothing ->
                     False
-                    
-                Just pst -> 
+
+                Just pst ->
                     if st > pst then
                         False
-                        
+
                     else
                         True
 
 
 asPosition : PositionOnline -> Position (Float, Float)
 asPosition p =
-    case p of 
+    case p of
         Actual x -> x
         Prediction x -> x
-        
+
 
 isPrediction p =
-    case p of 
+    case p of
         Prediction _ -> True
         Actual _ -> False
 
@@ -272,16 +268,16 @@ type alias TickObject = { state: State
                         , serverPlayers: (Maybe PlayerLight, List PlayerLight)
                         , sequence: Int
                         }
-           
+
 
 makeTickObject : Input -> Game -> String -> TickObject
 makeTickObject { clock, server, keys } { state, serverTime, players, sequence } id =
-    TickObject 
+    TickObject
         state
         (case server.state of
-            Just serverState -> 
+            Just serverState ->
                 serverState
-            
+
             Nothing ->
                 state)
         clock.delta
