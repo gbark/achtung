@@ -42,6 +42,7 @@ Clone this repo and run using [elm-reactor](https://github.com/elm-lang/elm-reac
 * [ ] Client prediction is not very accurate. Off by ~0.5 points compared to server for a player moving straight.
 * [ ] Intermittent - Game is not started when enough players have joined
 * [ ] Opponents are not moving smoothly enough
+* [ ] Client runs at a faster tick rate than server. (performance test server)
 
 ## Latency compensation - <https://developer.valvesoftware.com/wiki/Latency_Compensating_Methods_in_Client/Server_In-game_Protocol_Design_and_Optimization#Lag_Compensation>
 
