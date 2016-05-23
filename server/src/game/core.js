@@ -1,5 +1,4 @@
 import { List, Map } from 'immutable'
-import { PHYSICS_INTERVAL } from '../main'
 
 
 const STRAIGHT = 'Straight'
@@ -367,29 +366,54 @@ function enoughPlayers(players) {
 }
 
 
-function applyInput(game, nextState, nextSequence) {
-    if (nextState !== STATE_PLAY) {
-        return game
-    }
-
+function applyInputs(game, nextState) {
     return game.get('players').map((player, id) => {
         const opponents = players.delete(id)
-        let direction = STRAIGHT
-
-        const path = player.get('inputs').reduce((input, acc) => {
-            direction = input.get('direction')
-            return acc.push(player.get('path'))
-        }, List())
-
-        return player
-            .set('direction', direction)
-            .set('path', path)
-            .set('latestPositions', path) // Implications?
-            .set('inputs', List())
+        return applyInput(game, player, opponents, nextState)
     })
 }
 
-function rewindPath(path, ms) {
-    path.count() PHYSICS_INTERVAL
-    return path
+
+function applyInput(game, player, opponents, nextState) {
+    let direction = STRAIGHT
+
+    const path = player.get('inputs').reduce((input, acc) => {
+        direction = input.get('direction')
+        
+        if (nextState !== STATE_PLAY) {
+            return acc.push(player.get('path'))
+        }
+        
+        // Latency compensation
+        // 1. Rewind players to an approximate past state where the input action happened on the client
+        // 2. Apply input
+        // 3. Replay all steps until we are in the present again
+        const [rewindedGame, stepsRewinded] = rewindGame(game, player.get('roundTripTime')/2, delta) // step 1
+        while (--stepsRewinded) {
+            
+        }
+        
+        return acc.push(player.get('path'))
+    }, List())
+
+    return player
+        .set('direction', direction)
+        .set('path', path)
+        .set('latestPositions', path) // Implications?
+        .set('inputs', List())
+}
+
+function rewindGame(game, ms, delta) {
+    const stepsToRewind = Math.round(ms / delta)
+    if (stepsToRewind < 1) {
+        return [game, 0]
+    }
+    
+    return game.set('players', game.get('players').map(p => {
+        if (!p.get('alive')) {
+            return p
+        }
+        
+        return [p.set('path', p.get('path').skip(stepsToRewind)), stepsToRewind]
+    }))
 }

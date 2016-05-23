@@ -53,7 +53,7 @@ export default function reducer(state = DEFAULT_GAME, action) {
                 console.log('Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + ' which is in the future. Server is only at seq ' + state.get('sequence'))
                 
                 // Allow this if round is over.
-                // This will avoid snakes from getting "frozen" in the last rounds direction
+                // This will avoid snakes from getting "frozen" in the last round's direction
                 if (state.get('state') === STATE_PLAY) {
                     return state
                 }
@@ -84,7 +84,7 @@ export default function reducer(state = DEFAULT_GAME, action) {
             if (!state.getIn(['players', action.id])) {
                 return state
             }
-            // console.log('rtt for user ' + action.id + ' is ' + action.time)
+            
             return state.setIn(['players', action.id, 'roundTripTime'], action.time)
 
         default:
