@@ -1,5 +1,6 @@
 module Decoder where
 
+
 import Json.Decode as Json exposing (..)
 import Json.Decode as Json exposing (..)
 import Color

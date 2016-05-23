@@ -15,7 +15,6 @@ game.ports.playerOutput.subscribe((output) => {
 	if (ws && ws.connected) {
 		ws.emit('playerOutput', output)
 	}
-	
 })
 
 

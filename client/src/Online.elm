@@ -32,8 +32,6 @@ update ({ gamearea, server, serverId } as input) game =
                 sequence =
                     updateSequence tickObject game.sequence
 
-                -- log = Debug.log "sequence" game.sequence
-
             in
                 { game | players = self ++ opponents
                        , state = tickObject.nextState
@@ -136,8 +134,6 @@ updatePathAndBuffer { latestPositions } state nextState delta stale player =
 
                     else
                         makePredictions (List.head latestPositions') delta (player.predictedPositions + 1) player
-
-                -- log = Debug.log ("newPredictions: " ++ (toString (List.length newPredictions)) ++ " latestPositions': " ++ (toString (List.length latestPositions'))) True
 
                 path =
                     newPredictions                                           -- Append new predictions
