@@ -50,8 +50,12 @@ export default function reducer(state = DEFAULT_GAME, action) {
                 return state
             }
             if (state.get('sequence') < action.sequence) {
-                console.log('Input error: Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + ' which is in the future. Server is only at seq ' + state.get('sequence'))
-                return state
+                console.log('Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + ' which is in the future. Server is only at seq ' + state.get('sequence'))
+                
+                // Allow this if round is over to that snakes dont get "frozen" in the last rounds direction
+                if (state.get('state') === STATE_PLAY) {
+                    return state
+                }
             }
             
             return state
