@@ -1,32 +1,29 @@
+import gameloop from 'node-gameloop'
+
 import { startServer, detectRoundTripTime } from './server'
 import makeStore from './store'
 import { update, clearPositions, endCooldown } from './game/action_creators'
 import { STATE_COOLDOWN, STATE_PLAY } from './game/core'
 
 
+const COOLDOWN_TIME = 2000
+
 const store = makeStore()
 const io = startServer(store)
 let prevState = store.getState()
 
-setInterval(physicsUpdate, 1000/35) // 35 fps, same as on client
-setInterval(serverUpdate, 105)
-setInterval(() => { detectRoundTripTime(io) }, 500)
-
-const COOLDOWN_TIME = 2000
+gameloop.setGameLoop(physicsUpdate, 1000/35) // 35 fps, same as on client
+gameloop.setGameLoop(serverUpdate, 50)
+gameloop.setGameLoop(() => { detectRoundTripTime(io) }, 500)
 
 
-// calculate physics and game state. loop at same interval as clients
-let lastInv = +new Date()
-function physicsUpdate() {
-	const now = +new Date()
-	const delta = (now - lastInv)/1000
-	lastInv = now
-	
+// calculate physics and game state 
+function physicsUpdate(delta) {
 	store.dispatch(update(delta))
 }
 
 
-// push state to clients. loop at 45ms interval
+// push state to clients
 let updating = false
 let seqAtLastUpdate = 0
 function serverUpdate() {
@@ -37,8 +34,10 @@ function serverUpdate() {
 	
 	const newState = store.getState()
 	if (newState.get('players') && !newState.equals(prevState)) {
-		console.log('diff', (newState.get('sequence')-seqAtLastUpdate))
+		
+		console.log('Sequences passed since last server update: ', (newState.get('sequence')-seqAtLastUpdate))
 		seqAtLastUpdate = newState.get('sequence')
+		
 		io.emit('gameState', makeOutput(newState))
 		store.dispatch(clearPositions())
 		prevState = newState
@@ -87,6 +86,5 @@ store.subscribe(() => {
 	const state = store.getState()
 	startNewRoundCountdown(state)
     
-    // Shut off. Seems to cause race condition.
-	//forcePushStateAtRoundStart(state)
+	forcePushStateAtRoundStart(state)
 })

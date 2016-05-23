@@ -50,7 +50,7 @@ export default function reducer(state = DEFAULT_GAME, action) {
                 return state
             }
             if (state.get('sequence') < action.sequence) {
-                console.log('Input error: Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + '. Server is at seq ' + state.get('sequence'))
+                console.log('Input error: Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + ' which is in the future. Server is only at seq ' + state.get('sequence'))
                 return state
             }
             
