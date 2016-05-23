@@ -2,6 +2,16 @@ import { List, Map } from 'immutable'
 import { PHYSICS_INTERVAL } from '../main'
 
 
+const STRAIGHT = 'Straight'
+const LEFT = 'Left'
+const RIGHT = 'Right'
+const PLAYERS_REQUIRED = 2
+const MAX_ANGLE_CHANGE = 5
+const SPEED = 125
+const SNAKE_WIDTH = 3
+const SAFETY_MARGIN = 0
+
+
 export const DEFAULT_PLAYER = Map({
 	path: List(),
     latestPositions: List(),
@@ -32,16 +42,6 @@ export function update(delta, game) {
                .set('sequence', nextSequence)
 			   .set('players', updatePlayers(game, nextState, nextSequence, delta))
 }
-
-
-const STRAIGHT = 'Straight'
-const LEFT = 'Left'
-const RIGHT = 'Right'
-const PLAYERS_REQUIRED = 2
-const MAX_ANGLE_CHANGE = 5
-const SPEED = 125
-const SNAKE_WIDTH = 3
-const SAFETY_MARGIN = 0
 
 
 function updateState(game) {

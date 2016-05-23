@@ -105,13 +105,13 @@ mergeWithDefaults serverOpponent localOpponent =
 resetAtNewRound state nextState player =
     case nextState == Play && state /= Play of
         True ->
-            let log = Debug.log "path" player.path in
+            let log = Debug.log ("path" ++ (toString player.id)) player.path in
             { player | path = defaultPlayer.path
-                     , predictedPositions = defaultPlayer.predictedPositions
-                     , angle = defaultPlayer.angle
-                     , direction = defaultPlayer.direction
-                     }
-
+                    , predictedPositions = defaultPlayer.predictedPositions
+                    , angle = defaultPlayer.angle
+                    , direction = defaultPlayer.direction
+                    }
+                    
         False ->
             player
 

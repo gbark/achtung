@@ -46,10 +46,19 @@ export default function reducer(state = DEFAULT_GAME, action) {
             if (!state.getIn(['players', action.id])) {
                 return state
             }
-
-            console.log('server seq-player seq ', (action.sequence-state.get('sequence')))
-            console.log('server seq-player path length ', (action.sequence-(state.getIn(['players', action.id], 'path').count())))
-
+            if (state.getIn(['players', action.id, 'direction']) === action.direction) {
+                return state
+            }
+            if (state.get('sequence') < action.sequence) {
+                console.log('Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + ' which is in the future. Server is only at seq ' + state.get('sequence'))
+                
+                // Allow this if round is over.
+                // This will avoid snakes from getting "frozen" in the last rounds direction
+                if (state.get('state') === STATE_PLAY) {
+                    return state
+                }
+            }
+            
             const inputs = state.getIn(['players', action.id, 'inputs'])
             const input = {
                 sequence: action.sequence,
@@ -58,13 +67,12 @@ export default function reducer(state = DEFAULT_GAME, action) {
             }
 
             return state.setIn(['players', action.id, 'inputs'], inputs.push(Map(input)))
-
-
+            
+            
         case CLEAR_POSITIONS:
             const players = state.get('players').map(p => {
                 return p.set('latestPositions', List())
                         .set('puncture', 0)
-                        .set('sequence', -1)
             })
 
             return state.set('players', players)
