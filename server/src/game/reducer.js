@@ -46,9 +46,13 @@ export default function reducer(state = DEFAULT_GAME, action) {
             if (!state.getIn(['players', action.id])) {
                 return state
             }
-            
-            console.log('server seq-player seq ', (action.sequence-state.get('sequence')))
-            console.log('server seq-player path length ', (action.sequence-(state.getIn(['players', action.id], 'path').count())))
+            if (state.getIn(['players', action.id, 'direction']) === action.direction) {
+                return state
+            }
+            if (state.get('sequence') < action.sequence) {
+                console.log('Input error: Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + '. Server is at seq ' + state.get('sequence'))
+                return state
+            }
             
             return state
                     .setIn(['players', action.id, 'sequence'], action.sequence)
@@ -59,7 +63,6 @@ export default function reducer(state = DEFAULT_GAME, action) {
             const players = state.get('players').map(p => {
                 return p.set('latestPositions', List())
                         .set('puncture', 0)
-                        .set('sequence', -1)
             })
             
             return state.set('players', players)
@@ -71,7 +74,7 @@ export default function reducer(state = DEFAULT_GAME, action) {
             if (!state.getIn(['players', action.id])) {
                 return state
             }
-            console.log('rtt for user ' + action.id + ' is ' + action.time)
+            // console.log('rtt for user ' + action.id + ' is ' + action.time)
             return state.setIn(['players', action.id, 'roundTripTime'], action.time)
             
         default:
