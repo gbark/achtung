@@ -1,40 +1,48 @@
-export const UPDATE = 'achtung/UPDATE'
+export const UPDATE_WAITING_LIST = 'achtung/UPDATE_WAITING_LIST'
 export const ADD_PLAYER = 'achtung/ADD_PLAYER'
 export const REMOVE_PLAYER = 'achtung/REMOVE_PLAYER'
+
+export const UPDATE_GAME = 'achtung/UPDATE_GAME'
 export const SET_DIRECTION = 'achtung/SET_DIRECTION'
 export const CLEAR_POSITIONS = 'achtung/CLEAR_POSITIONS'
 export const END_COOLDOWN = 'achtung/END_COOLDOWN'
 export const SET_ROUND_TRIP_TIME = 'achtung/SET_ROUND_TRIP_TIME'
 
 
-
-export function update(delta) {
-	return {
-        type: UPDATE,
-        delta
+export function updateWaitingList(msSinceLastUpdate) {
+    return {
+        type: UPDATE_WAITING_LIST,
+        msSinceLastUpdate
     }
 }
 
 
-export function addPlayer(id, color) {
-	return {
+export function addPlayer(id) {
+    return {
         type: ADD_PLAYER,
-        id,
-        color
+        id
     }
 }
 
 
 export function removePlayer(id) {
-	return {
+    return {
         type: REMOVE_PLAYER,
         id
     }
 }
 
 
+export function updateGame(delta) {
+    return {
+        type: UPDATE_GAME,
+        delta
+    }
+}
+
+
 export function setDirection(direction, id, sequence) {
-	return {
+    return {
         type: SET_DIRECTION,
         direction,
         id,
@@ -44,21 +52,21 @@ export function setDirection(direction, id, sequence) {
 
 
 export function clearPositions() {
-	return {
+    return {
         type: CLEAR_POSITIONS
     }
 }
 
 
 export function endCooldown() {
-	return {
+    return {
         type: END_COOLDOWN,
     }
 }
 
 
 export function setRoundTripTime(id, time) {
-	return {
+    return {
         type: SET_ROUND_TRIP_TIME,
         id,
         time

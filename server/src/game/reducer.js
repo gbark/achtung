@@ -1,88 +1,153 @@
 import { List, Map } from 'immutable'
 
-import { STATE_WAITING_PLAYERS
-	   , STATE_PLAY
-	   , STATE_ROUNDOVER
-	   , DEFAULT_PLAYER
-	   , update
-       , STATE_COOLDOWN_OVER 
-       } from './core'
-
-import { UPDATE
-	   , ADD_PLAYER
-	   , REMOVE_PLAYER
-	   , SET_DIRECTION
+import { UPDATE_WAITING_LIST
+       , ADD_PLAYER
+       , REMOVE_PLAYER
+       , UPDATE_GAME
+       , SET_DIRECTION
        , CLEAR_POSITIONS
        , END_COOLDOWN
-       , SET_ROUND_TRIP_TIME 
+       , SET_ROUND_TRIP_TIME
        } from './action_creators'
-       
 
-const DEFAULT_GAME = Map({
-	players: Map(), 
+
+import { STATE_WAITING_PLAYERS
+       , STRAIGHT
+       } from './core'
+
+import gameReducer from './game_reducer'
+
+
+const INITIAL_STATE = Map({
+    waiting: List(),
+    waitingTime: 0,
+    games: List()
+})
+
+
+const INITIAL_GAME = Map({
+    players: Map(),
     sequence: 0,
     gamearea: List([500, 500]),
     state: STATE_WAITING_PLAYERS,
     round: 1
-})       
+})
 
 
-export default function reducer(state = DEFAULT_GAME, action) {
+const DEFAULT_PLAYER = Map({
+    path: List(),
+    latestPositions: List(),
+    angle: 0,
+    direction: STRAIGHT,
+    alive: true,
+    score: 0,
+    color: null,
+    sequence: -1,
+    roundTripTime: null
+})
+
+
+const MAX_WAITING_TIME = 25*1000
+const MIN_PLAYERS = 2
+const MAX_PLAYERS = 3
+const COLORS = List([
+    'yellow',
+    'red',
+    'blue',
+    'green',
+    'purple',
+    'orange',
+    'white',
+    'brown',
+    'grey'
+])
+
+
+export default function reducer(state = INITIAL_STATE, action) {
     switch(action.type) {
-        case UPDATE:
-            return update(action.delta, state)
-            
+        case UPDATE_WAITING_LIST:
+            if (state.get('waiting').count() < 1) {
+                console.log('No players in lobby')
+                return state.set('waitingTime', 0)
+            }
+
+            if (state.get('waiting').count() < MIN_PLAYERS) {
+                console.log('One player in lobby')
+                return state.set('waitingTime', 0)
+            }
+
+            if (state.get('waiting').count() >= MAX_PLAYERS) {
+                return createGame(state, action)
+            }
+
+            if (state.get('waitingTime') >= MAX_WAITING_TIME && state.get('waiting').count() >= MIN_PLAYERS) {
+                return createGame(state, action)
+            }
+
+            const secondsLapsed = (state.get('waitingTime') + action.msSinceLastUpdate) / 1000
+            const count = state.get('waiting').count()
+
+            console.log(`${count} players have joined. Waiting for ${MAX_PLAYERS-count} more, or for ${(MAX_WAITING_TIME/1000 - secondsLapsed)} seconds to pass.`)
+
+
+            return state.set('waitingTime', state.get('waitingTime') + action.msSinceLastUpdate)
+
         case ADD_PLAYER:
-            if (state.get('state') === STATE_WAITING_PLAYERS) {
-                return state.setIn(['players', action.id], DEFAULT_PLAYER.set('color', action.color))
+            const waitingList = state.get('waiting')
+            console.log('ADD_PLAYER')
+
+            // Already in waiting list?
+            if (waitingList.find(id => id === action.id)) {
+                return state
             }
-            
-            return state
-			            
+
+            return state.set('waiting', waitingList.push(action.id))
+
         case REMOVE_PLAYER:
-			return state.deleteIn(['players'], action.id)
-            
-        case SET_DIRECTION:            
-            if (!state.getIn(['players', action.id])) {
-                return state
-            }
-            if (state.getIn(['players', action.id, 'direction']) === action.direction) {
-                return state
-            }
-            if (state.get('sequence') < action.sequence) {
-                console.log('Player ' + action.id + ' is trying to set direction for seq ' + action.sequence + ' which is in the future. Server is only at seq ' + state.get('sequence'))
-                
-                // Allow this if round is over to that snakes dont get "frozen" in the last rounds direction
-                if (state.get('state') === STATE_PLAY) {
-                    return state
+            const lessRemoved = state.get('waiting').reduce((acc, id) => {
+                if (id === action.id) {
+                    return acc
                 }
-            }
-            
-            return state
-                    .setIn(['players', action.id, 'sequence'], action.sequence)
-                    .setIn(['players', action.id, 'direction'], action.direction)
-            
-            
-        case CLEAR_POSITIONS:
-            const players = state.get('players').map(p => {
-                return p.set('latestPositions', List())
-                        .set('puncture', 0)
-            })
-            
-            return state.set('players', players)
-            
-        case END_COOLDOWN:
-            return state.set('state', STATE_COOLDOWN_OVER)
-            
+
+                return acc.push(id)
+            }, List())
+
+            return state.set('waiting', lessRemoved)
+
+        /**
+         * @todo Refactor this to only run on the relevant game based on game id
+         */
+        case UPDATE_GAME:
+        case SET_DIRECTION:
         case SET_ROUND_TRIP_TIME:
-            if (!state.getIn(['players', action.id])) {
-                return state
-            }
-            // console.log('rtt for user ' + action.id + ' is ' + action.time)
-            return state.setIn(['players', action.id, 'roundTripTime'], action.time)
-            
-        default:
-            return state
-            
+            return state.set('games', state.get('games').map(game => {
+                return gameReducer(game, action)
+            }))
+
+        // These NEED to run on a specified game
+        case CLEAR_POSITIONS:
+        case END_COOLDOWN:
+            return state.set('games', state.get('games').map(game => {
+                return gameReducer(game, action)
+            }))
+
     }
+
+    return state
+}
+
+
+function createGame(state, action) {
+    const players = state.get('waiting').reduce((acc, p, index) => {
+        return acc.set(p, DEFAULT_PLAYER.set('color', COLORS.get(index)))
+    }, Map())
+
+    const newGame = INITIAL_GAME.set('players', players)
+
+    console.log(`Starting game with ${players.count()} players`)
+
+    return state
+            .set('games', state.get('games').push(newGame))
+            .set('waiting', state.get('waiting').skip(MAX_PLAYERS))
+            .set('waitingTime', state.get('waitingTime') + action.msSinceLastUpdate)
 }

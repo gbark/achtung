@@ -8,17 +8,6 @@ import { addPlayer
 
 const PORT = 9000
 
-let colors = [
-    'yellow',
-    'red',
-    'blue',
-    'green',
-    'purple',
-    'orange',
-    'white',
-    'brown',
-    'grey'
-]
 
 export function startServer(store) {
     const io = new Server().attach(PORT)
@@ -27,7 +16,7 @@ export function startServer(store) {
     io.on('connection', (socket) => {
         const id = socket.client.id
         console.log('-- socket.io: client connected. id: ', id)
-        
+
         socket
             .on('playerOutput', (data) => {
                 store.dispatch(setDirection(data.direction, id, data.sequence))
@@ -40,13 +29,13 @@ export function startServer(store) {
             .on('ho', () => {
                 store.dispatch(setRoundTripTime(id, Date.now() - startTime))
             })
-            
+
         socket.emit('playerId', socket.client.id)
-            
-        store.dispatch(addPlayer(id, colors.shift()))
+
+        store.dispatch(addPlayer(socket.client.id))
         detectRoundTripTime(io)
     })
-    
+
     return io
 }
 
@@ -55,4 +44,4 @@ let startTime = Date.now()
 export function detectRoundTripTime(io) {
     startTime = Date.now()
     io.emit('hey')
-} 
+}

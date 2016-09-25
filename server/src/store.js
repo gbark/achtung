@@ -1,9 +1,6 @@
-import {applyMiddleware, createStore} from 'redux';
-import {Map} from 'immutable';
-
+import {createStore} from 'redux';
 import reducer from './game/reducer';
 
-
 export default function makeStore() {
-    return createStore(reducer);
+    return createStore(reducer)
 }
