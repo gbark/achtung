@@ -12,12 +12,12 @@ const SAFETY_MARGIN = 0
 
 
 export const DEFAULT_PLAYER = Map({
-	path: List(),
+    path: List(),
     latestPositions: List(),
-	angle: 0,
-	direction: STRAIGHT,
-	alive: true,
-	score: 0,
+    angle: 0,
+    direction: STRAIGHT,
+    alive: true,
+    score: 0,
     color: null,
     sequence: -1,
     roundTripTime: null,
@@ -33,13 +33,13 @@ export const STATE_COOLDOWN_OVER = 'CooldownOver'
 
 
 export function update(delta, game) {
-	const nextState = updateState(game),
+    const nextState = updateState(game),
           nextSequence = updateSequence(game, nextState)
 
-	return game.set('state', nextState)
-			   .set('round', updateRound(game, nextState))
+    return game.set('state', nextState)
+               .set('round', updateRound(game, nextState))
                .set('sequence', nextSequence)
-			   .set('players', updatePlayers(game, nextState, nextSequence, delta))
+               .set('players', updatePlayers(game, nextState, nextSequence, delta))
 }
 
 
@@ -47,14 +47,14 @@ function updateState(game) {
     const state = game.get('state'),
           players = game.get('players')
 
-	switch(state) {
+    switch(state) {
         case STATE_WAITING_PLAYERS:
-			if (enoughPlayers(players)) {
+            if (enoughPlayers(players)) {
                 console.log('Game on!!')
-				return STATE_PLAY
-			}
+                return STATE_PLAY
+            }
 
-			return state
+            return state
 
         case STATE_PLAY:
             if (typeof players === 'undefined') {
@@ -62,15 +62,15 @@ function updateState(game) {
                 return STATE_WAITING_PLAYERS
             }
 
-			const alive = players.filter(p => {
-				return p.get('alive') === true
-			})
-			if (alive.count() < 2) {
+            const alive = players.filter(p => {
+                return p.get('alive') === true
+            })
+            if (alive.count() < 2) {
                 console.log('Round over!!')
-				return STATE_ROUNDOVER
-			}
+                return STATE_ROUNDOVER
+            }
 
-			return state
+            return state
 
         case STATE_ROUNDOVER:
             return STATE_COOLDOWN
@@ -78,21 +78,21 @@ function updateState(game) {
 
         case STATE_COOLDOWN:
             if (enoughPlayers(players)) {
-				return STATE_COOLDOWN
-			}
+                return STATE_COOLDOWN
+            }
 
-			return STATE_WAITING_PLAYERS
+            return STATE_WAITING_PLAYERS
 
 
         case STATE_COOLDOWN_OVER:
             if (enoughPlayers(players)) {
                 console.log('Starting new round!')
-				return STATE_PLAY
-			}
+                return STATE_PLAY
+            }
 
-			return STATE_WAITING_PLAYERS
+            return STATE_WAITING_PLAYERS
 
-	}
+    }
 
 }
 
@@ -100,9 +100,9 @@ function updateState(game) {
 function updatePlayers(game, nextState, sequence, delta) {
     const players = game.get('players')
 
-	switch(nextState) {
+    switch(nextState) {
         case STATE_WAITING_PLAYERS:
-			return players
+            return players
 
         case STATE_PLAY:
             const nextPlayers = players.map((p, id) => {
@@ -118,17 +118,17 @@ function updatePlayers(game, nextState, sequence, delta) {
             })
 
         case STATE_ROUNDOVER:
-			return players
+            return players
 
         case STATE_COOLDOWN:
-			return players
+            return players
 
         case STATE_COOLDOWN_OVER:
-			return players
+            return players
 
-	}
+    }
 
-	return players
+    return players
 }
 
 
@@ -367,40 +367,46 @@ function enoughPlayers(players) {
 
 
 function applyInputs(game, nextState) {
-    return game.get('players').map((player, id) => {
-        const opponents = players.delete(id)
-        return applyInput(game, player, opponents, nextState)
-    })
-}
+    if (nextState !== STATE_PLAY) {
+        // Just catch the last inputted direction so we avoid
+        // "freezing" snakes during the waiting period until next round
+        return game.set('players', game.get('players').map((player, id) => {
+            return player
+                .set('direction', player.get('inputs').last().get('direction'))
+                .set('inputs', List())
+        }))
+    }
 
 
-function applyInput(game, player, opponents, nextState) {
-    let direction = STRAIGHT
-
-    const path = player.get('inputs').reduce((input, acc) => {
-        direction = input.get('direction')
-        
-        if (nextState !== STATE_PLAY) {
-            return acc.push(player.get('path'))
+    return game.set('players', game.get('players').map((player, id) => {
+        if (!player.get('inputs') || player.get('inputs').count() < 1) {
+            return player
         }
-        
+
+
         // Latency compensation
         // 1. Rewind players to an approximate past state where the input action happened on the client
-        // 2. Apply input
+        // 2. Apply input to player
         // 3. Replay all steps until we are in the present again
-        const [rewindedGame, stepsRewinded] = rewindGame(game, player.get('roundTripTime')/2, delta) // step 1
-        while (--stepsRewinded) {
-            
-        }
-        
-        return acc.push(player.get('path'))
-    }, List())
 
-    return player
-        .set('direction', direction)
-        .set('path', path)
-        .set('latestPositions', path) // Implications?
-        .set('inputs', List())
+        const [gameRewinded, numberOfStepsRewinded] = rewindGame(game, player.get('roundTripTime')/2, delta) // step 1
+        const playerRewinded = gameRewinded.getIn(['players', id])
+        const opponentsRewinded = gameRewinded.get('players').delete(id)
+        const path = player.get('inputs').reduce((acc, value, key) => {
+
+            while (numberOfStepsRewinded--) {
+
+            }
+
+            return acc.push(player.get('path'))
+        }, playerRewinded.get('path'))
+
+        return player
+            .set('direction', player.get('inputs').last().get('direction'))
+            .set('path', path)
+            .set('latestPositions', path) // Implications?
+            .set('inputs', List())
+    }))
 }
 
 function rewindGame(game, ms, delta) {
@@ -408,12 +414,29 @@ function rewindGame(game, ms, delta) {
     if (stepsToRewind < 1) {
         return [game, 0]
     }
-    
+
     return game.set('players', game.get('players').map(p => {
         if (!p.get('alive')) {
             return p
         }
-        
+
         return [p.set('path', p.get('path').skip(stepsToRewind)), stepsToRewind]
     }))
+}
+
+
+function buildInputsList(players, game, delta) {
+    return players.map(p => {
+        return p.get('inputs').map(input => {
+            return {
+                id: p.get('id'),
+                direction: input.get('direction'),
+                sequence: getSequence(game.get('sequence'), p.get('roundTripTime'), delta)
+            }
+        })
+    })
+}
+
+function getSequence(gameSeq, rtt, delta) {
+    return gameSeq-Math.round((rtt/2) / delta)
 }
