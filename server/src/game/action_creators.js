@@ -7,6 +7,7 @@ export const SET_DIRECTION = 'achtung/SET_DIRECTION'
 export const CLEAR_POSITIONS = 'achtung/CLEAR_POSITIONS'
 export const END_COOLDOWN = 'achtung/END_COOLDOWN'
 export const SET_ROUND_TRIP_TIME = 'achtung/SET_ROUND_TRIP_TIME'
+export const CLEAN_UP = 'achtung/CLEAN_UP'
 
 
 export function updateWaitingList(secondsSinceLastUpdate) {
@@ -51,16 +52,18 @@ export function setDirection(direction, id, sequence) {
 }
 
 
-export function clearPositions() {
+export function clearPositions(gameId) {
     return {
-        type: CLEAR_POSITIONS
+        type: CLEAR_POSITIONS,
+        gameId
     }
 }
 
 
-export function endCooldown() {
+export function endCooldown(gameId) {
     return {
         type: END_COOLDOWN,
+        gameId
     }
 }
 
@@ -70,5 +73,12 @@ export function setRoundTripTime(id, time) {
         type: SET_ROUND_TRIP_TIME,
         id,
         time
+    }
+}
+
+
+export function cleanUp() {
+    return {
+        type: CLEAN_UP
     }
 }

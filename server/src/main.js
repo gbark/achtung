@@ -6,17 +6,18 @@ import { updateGame
        , clearPositions
        , endCooldown
        , updateWaitingList
+       , cleanUp
        } from './game/action_creators'
 import { STATE_COOLDOWN } from './game/core'
 
 
-const COOLDOWN_TIME = 2000
+const ROUNDOVER_COOLDOWN_TIME = 2000
 
 const LOBBY_UPDATE_INTERVAL = 1000
-const COOLDOWN_UPDATE_INTERVAL = COOLDOWN_TIME + 0.5 // Avoids running multiple timers per game without having to keep references to them
+const COOLDOWN_UPDATE_INTERVAL = ROUNDOVER_COOLDOWN_TIME + 1 // Avoids running multiple timers per game without having to keep references to them
 const PHYSICS_UPDATE_INTERVAL = 1000/35 // 35 fps, same as on client
-const SERVER_UPDATE_INTERVAL = 50
-const RTT_DETECTION_INTERVAL = 500
+const SERVER_UPDATE_INTERVAL = 50 // @todo Figure out if there is a better number to use
+const RTT_DETECTION_INTERVAL = 500 // @todo Figure out if there is a better number to use
 
 
 const store = makeStore()
@@ -30,22 +31,23 @@ gameloop.setGameLoop(serverUpdate, SERVER_UPDATE_INTERVAL)
 gameloop.setGameLoop(() => { detectRoundTripTime(io) }, RTT_DETECTION_INTERVAL)
 
 
-// Update lobby queue and start new games
+// Update lobby queue, start new games, and clean up stale game instances
 function lobbyUpdate(delta) {
     if (!store.getState().get('waiting')) {
         return false
     }
 
     store.dispatch(updateWaitingList(delta))
+    store.dispatch(cleanUp())
 }
 
 // Finish game over cooldown period
 function cooldownUpdate(delta) {
-    store.getState().get('games').map((game, key) => {
+    store.getState().get('games').map((game, gameId) => {
         if (game.get('state') === STATE_COOLDOWN) {
             setTimeout(() => {
-                store.dispatch(endCooldown(key))
-            }, COOLDOWN_TIME)
+                store.dispatch(endCooldown(gameId))
+            }, ROUNDOVER_COOLDOWN_TIME)
         }
     })
 }
@@ -68,7 +70,7 @@ function serverUpdate() {
     }
     updating = true
 
-    store.getState().get('games').map(game => {
+    store.getState().get('games').map((game, gameId) => {
 
         game.get('players').map((p, id) => {
 
@@ -76,9 +78,9 @@ function serverUpdate() {
 
         })
 
-    })
+        store.dispatch(clearPositions(gameId))
 
-    store.dispatch(clearPositions())
+    })
 
     updating = false
 }
