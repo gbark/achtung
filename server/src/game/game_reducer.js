@@ -2,6 +2,7 @@ import { List, Map } from 'immutable'
 
 import { update
        , STATE_COOLDOWN_OVER
+       , STATE_PLAY
        } from './core'
 
 import { UPDATE_GAME

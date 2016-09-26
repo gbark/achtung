@@ -9,10 +9,10 @@ export const END_COOLDOWN = 'achtung/END_COOLDOWN'
 export const SET_ROUND_TRIP_TIME = 'achtung/SET_ROUND_TRIP_TIME'
 
 
-export function updateWaitingList(msSinceLastUpdate) {
+export function updateWaitingList(secondsSinceLastUpdate) {
     return {
         type: UPDATE_WAITING_LIST,
-        msSinceLastUpdate
+        secondsSinceLastUpdate
     }
 }
 

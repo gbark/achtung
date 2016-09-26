@@ -34,7 +34,7 @@ const INITIAL_GAME = Map({
 })
 
 
-const DEFAULT_PLAYER = Map({
+const INITAL_PLAYER = Map({
     path: List(),
     latestPositions: List(),
     angle: 0,
@@ -47,7 +47,7 @@ const DEFAULT_PLAYER = Map({
 })
 
 
-const MAX_WAITING_TIME = 25*1000
+const MAX_WAITING_TIME = 25
 const MIN_PLAYERS = 2
 const MAX_PLAYERS = 3
 const COLORS = List([
@@ -84,13 +84,13 @@ export default function reducer(state = INITIAL_STATE, action) {
                 return createGame(state, action)
             }
 
-            const secondsLapsed = (state.get('waitingTime') + action.msSinceLastUpdate) / 1000
+            const secondsLapsed = (state.get('waitingTime') + action.secondsSinceLastUpdate)
             const count = state.get('waiting').count()
 
-            console.log(`${count} players have joined. Waiting for ${MAX_PLAYERS-count} more, or for ${(MAX_WAITING_TIME/1000 - secondsLapsed)} seconds to pass.`)
+            console.log(`${count} players have joined. Waiting for ${MAX_PLAYERS-count} more, or for ${(MAX_WAITING_TIME - secondsLapsed)} seconds to pass.`)
 
 
-            return state.set('waitingTime', state.get('waitingTime') + action.msSinceLastUpdate)
+            return state.set('waitingTime', state.get('waitingTime') + action.secondsSinceLastUpdate)
 
         case ADD_PLAYER:
             const waitingList = state.get('waiting')
@@ -139,7 +139,7 @@ export default function reducer(state = INITIAL_STATE, action) {
 
 function createGame(state, action) {
     const players = state.get('waiting').reduce((acc, p, index) => {
-        return acc.set(p, DEFAULT_PLAYER.set('color', COLORS.get(index)))
+        return acc.set(p, INITAL_PLAYER.set('color', COLORS.get(index)))
     }, Map())
 
     const newGame = INITIAL_GAME.set('players', players)
@@ -149,5 +149,5 @@ function createGame(state, action) {
     return state
             .set('games', state.get('games').push(newGame))
             .set('waiting', state.get('waiting').skip(MAX_PLAYERS))
-            .set('waitingTime', state.get('waitingTime') + action.msSinceLastUpdate)
+            .set('waitingTime', state.get('waitingTime') + action.secondsSinceLastUpdate)
 }

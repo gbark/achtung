@@ -7,30 +7,50 @@ import { updateGame
        , endCooldown
        , updateWaitingList
        } from './game/action_creators'
-import { STATE_COOLDOWN, STATE_PLAY } from './game/core'
+import { STATE_COOLDOWN } from './game/core'
 
 
 const COOLDOWN_TIME = 2000
 
+const LOBBY_UPDATE_INTERVAL = 1000
+const COOLDOWN_UPDATE_INTERVAL = COOLDOWN_TIME + 0.5 // Avoids running multiple timers per game without having to keep references to them
+const PHYSICS_UPDATE_INTERVAL = 1000/35 // 35 fps, same as on client
+const SERVER_UPDATE_INTERVAL = 50
+const RTT_DETECTION_INTERVAL = 500
+
+
 const store = makeStore()
 const io = startServer(store)
-let prevState = store.getState()
-
-gameloop.setGameLoop(lobbyUpdate, 1000)
-gameloop.setGameLoop(physicsUpdate, 1000/35) // 35 fps, same as on client
-gameloop.setGameLoop(serverUpdate, 50)
-gameloop.setGameLoop(() => { detectRoundTripTime(io) }, 500)
 
 
-function lobbyUpdate() {
+gameloop.setGameLoop(lobbyUpdate, LOBBY_UPDATE_INTERVAL)
+gameloop.setGameLoop(cooldownUpdate, COOLDOWN_UPDATE_INTERVAL)
+gameloop.setGameLoop(physicsUpdate, PHYSICS_UPDATE_INTERVAL)
+gameloop.setGameLoop(serverUpdate, SERVER_UPDATE_INTERVAL)
+gameloop.setGameLoop(() => { detectRoundTripTime(io) }, RTT_DETECTION_INTERVAL)
+
+
+// Update lobby queue and start new games
+function lobbyUpdate(delta) {
     if (!store.getState().get('waiting')) {
         return false
     }
 
-    store.dispatch(updateWaitingList(1000))
+    store.dispatch(updateWaitingList(delta))
 }
 
-// calculate physics and game state
+// Finish game over cooldown period
+function cooldownUpdate(delta) {
+    store.getState().get('games').map((game, key) => {
+        if (game.get('state') === STATE_COOLDOWN) {
+            setTimeout(() => {
+                store.dispatch(endCooldown(key))
+            }, COOLDOWN_TIME)
+        }
+    })
+}
+
+// Calculate physics and game state
 function physicsUpdate(delta) {
     if (!store.getState().get('games')) {
         return false
@@ -40,7 +60,7 @@ function physicsUpdate(delta) {
 }
 
 
-// push state to clients
+// Push state to clients
 let updating = false
 function serverUpdate() {
     if (updating) {
@@ -48,25 +68,21 @@ function serverUpdate() {
     }
     updating = true
 
-    const newState = store.getState()
-    if (!newState.equals(prevState)) {
+    store.getState().get('games').map(game => {
 
-        newState.get('games').map(game => {
+        game.get('players').map((p, id) => {
 
-            game.get('players').map((p, id) => {
-
-                io.to('/#' + id).emit('gameState', makeOutput(game))
-
-            })
+            io.to('/#' + id).emit('gameState', makeOutput(game))
 
         })
 
-        store.dispatch(clearPositions())
-        prevState = newState
-    }
+    })
+
+    store.dispatch(clearPositions())
 
     updating = false
 }
+
 
 function makeOutput(state) {
     const players = state.get('players').map((v, k) => {
@@ -81,32 +97,3 @@ function makeOutput(state) {
             .set('serverTime', +new Date())
             .toJS()
 }
-
-
-let countdown = null
-function startNewRoundCountdown(state) {
-    if (countdown === null) {
-        if (state.get('state') === STATE_COOLDOWN) {
-            countdown = setTimeout(() => {
-                store.dispatch(endCooldown())
-                countdown = null
-            }, COOLDOWN_TIME)
-        }
-    }
-}
-
-// Push state immediatly after a round has started to minimise
-// delay between server and client update function
-function forcePushStateAtRoundStart(state) {
-    if (prevState.get('state') !== STATE_PLAY && state.get('state') === STATE_PLAY) {
-        serverUpdate()
-    }
-}
-
-
-store.subscribe(() => {
-    const state = store.getState()
-    startNewRoundCountdown(state)
-
-    forcePushStateAtRoundStart(state)
-})
