@@ -67,26 +67,26 @@ const COLORS = List([
 export default function reducer(state = INITIAL_STATE, action) {
     switch(action.type) {
         case UPDATE_WAITING_LIST:
-            if (state.get('waiting').count() < 1) {
+            if (state.get('waiting').size < 1) {
                 console.log('No players in lobby')
                 return state.set('waitingTime', 0)
             }
 
-            if (state.get('waiting').count() < MIN_PLAYERS) {
+            if (state.get('waiting').size < MIN_PLAYERS) {
                 console.log('One player in lobby')
                 return state.set('waitingTime', 0)
             }
 
-            if (state.get('waiting').count() >= MAX_PLAYERS) {
+            if (state.get('waiting').size >= MAX_PLAYERS) {
                 return createGame(state, action)
             }
 
-            if (state.get('waitingTime') >= MAX_WAITING_TIME && state.get('waiting').count() >= MIN_PLAYERS) {
+            if (state.get('waitingTime') >= MAX_WAITING_TIME && state.get('waiting').size >= MIN_PLAYERS) {
                 return createGame(state, action)
             }
 
             const secondsLapsed = (state.get('waitingTime') + action.secondsSinceLastUpdate)
-            console.log(`${count} players have joined. Waiting for ${MAX_PLAYERS - state.get('waiting').count()} more, or for ${(MAX_WAITING_TIME - secondsLapsed)} seconds to pass.`)
+            console.log(`${state.get('waiting').size} players have joined. Waiting for ${MAX_PLAYERS - state.get('waiting').size} more, or for ${(MAX_WAITING_TIME - secondsLapsed)} seconds to pass.`)
 
 
             return state.update('waitingTime', waitingTime => waitingTime + action.secondsSinceLastUpdate)
@@ -141,7 +141,7 @@ export default function reducer(state = INITIAL_STATE, action) {
 
 
             state.get('games').map((game, gameId) => {
-                if (game.get('players').count() >= MIN_PLAYERS) {
+                if (game.get('players').size >= MIN_PLAYERS) {
                     return
                 }
 
@@ -167,7 +167,7 @@ function createGame(state, action) {
 
     const newGame = INITIAL_GAME.set('players', players)
     const id = Date.now()
-    console.log(`Starting game ${id} with ${players.count()} players`)
+    console.log(`Starting game ${id} with ${players.size} players`)
 
     return state
             .setIn(['games', Date.now()], newGame)

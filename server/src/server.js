@@ -14,20 +14,19 @@ export function startServer(store) {
     console.log('-- socket.io: server started on port ', PORT)
 
     io.on('connection', (socket) => {
-        const id = socket.client.id
-        console.log('-- socket.io: client connected. id: ', id)
+        console.log('-- socket.io: client connected. id: ', socket.client.id)
 
         socket
             .on('playerOutput', (data) => {
-                store.dispatch(setDirection(data.direction, id, data.sequence))
+                store.dispatch(setDirection(data.direction, socket.client.id, data.sequence))
             })
             .on('disconnect', () => {
-                console.log('-- socket.io: client disconnected. id: ', id)
+                console.log('-- socket.io: client disconnected. id: ', socket.client.id)
 
-                store.dispatch(removePlayer(id))
+                store.dispatch(removePlayer(socket.client.id))
             })
             .on('ho', () => {
-                store.dispatch(setRoundTripTime(id, Date.now() - startTime))
+                store.dispatch(setRoundTripTime(socket.client.id, Date.now() - startTime))
             })
 
         socket.emit('playerId', socket.client.id)

@@ -33,28 +33,33 @@ gameloop.setGameLoop(() => { detectRoundTripTime(io) }, RTT_DETECTION_INTERVAL)
 
 // Update lobby queue, start new games, and clean up stale game instances
 function lobbyUpdate(delta) {
-    if (!store.getState().get('waiting')) {
-        return false
+    const state = store.getState()
+
+    if (state.get('games').size > 0) {
+        store.dispatch(cleanUp())
     }
 
-    store.dispatch(updateWaitingList(delta))
-    store.dispatch(cleanUp())
+    if (state.get('waiting').size > 0) {
+        store.dispatch(updateWaitingList(delta))
+    }
 }
 
 // Finish game over cooldown period
 function cooldownUpdate(delta) {
     store.getState().get('games').map((game, gameId) => {
+
         if (game.get('state') === STATE_COOLDOWN) {
-            setTimeout(() => {
-                store.dispatch(endCooldown(gameId))
-            }, ROUNDOVER_COOLDOWN_TIME)
+
+            setTimeout(() => { store.dispatch(endCooldown(gameId)) }, ROUNDOVER_COOLDOWN_TIME)
+
         }
+
     })
 }
 
 // Calculate physics and game state
 function physicsUpdate(delta) {
-    if (!store.getState().get('games')) {
+    if (store.getState().get('games').size < 1) {
         return false
     }
 
@@ -87,12 +92,11 @@ function serverUpdate() {
 
 
 function makeOutput(state) {
-    const players = state.get('players').map((v, k) => {
-        return v
-            .set('id', k)
-            .remove('path')
-            .remove('direction')
-    }).toArray()
+    const players = state.get('players').map((v, k) =>
+            v.set('id', k)
+             .remove('path')
+             .remove('direction')
+    ).toArray()
 
     return state
             .set('players', players)

@@ -48,10 +48,8 @@ function updateState(game) {
                 return STATE_WAITING_PLAYERS
             }
 
-            const alive = players.filter(p => {
-                return p.get('alive') === true
-            })
-            if (alive.count() < 2) {
+            const alive = players.filter(p => p.get('alive') === true)
+            if (alive.size < 2) {
                 console.log('Round over!!')
                 return STATE_ROUNDOVER
             }
@@ -153,9 +151,7 @@ function updatePlayer(delta, gamearea, serverSequence, opponents, player) {
 
           paths = collisionPaths(nextPlayer, opponents),
 
-          hs = paths.some(path => {
-              return hitSnake(path, position)
-          }),
+          hs = paths.some(path => hitSnake(path, position)),
 
           hw = hitWall(position, gamearea)
 
@@ -172,14 +168,12 @@ function awardWinner(opponents, player) {
         return player
     }
 
-    const winner = opponents.filter(p => {
-                        return p.get('alive') === true
-                    }).count() < 1
+    const winner = opponents.filter(p => p.get('alive') === true).size < 1
 
     if (winner) {
         // console.log('i won',  player.get('path').toJS())
         return player.set('alive', false)
-                     .set('score', player.get('score') + 1)
+                     .update('score', score => score + 1)
     }
 
     return player
@@ -187,11 +181,10 @@ function awardWinner(opponents, player) {
 
 
 function move(delta, serverSequence, player) {
-    const direction = player.get('direction')
     let angle = player.get('angle')
-    if (direction === LEFT) {
+    if (player.get('direction') === LEFT) {
         angle = angle + MAX_ANGLE_CHANGE
-    } else if (direction === RIGHT) {
+    } else if (player.get('direction') === RIGHT) {
         angle = angle + -MAX_ANGLE_CHANGE
     }
 
@@ -218,7 +211,7 @@ function move(delta, serverSequence, player) {
     return player.set('angle', angle)
                  .set('path', path)
                  .set('puncture', holes)
-                 .set('latestPositions', player.get('latestPositions').unshift(nextPosition))
+                 .update('latestPositions', latestPositions => latestPositions.unshift(nextPosition))
 }
 
 
@@ -251,10 +244,10 @@ function puncture(path, width) {
           rest = path.skip(width+marginWidth),
 
           punctured = toPuncture.map(p => {
-              return {
-                  ...p,
-                  visible: false
-              }
+                return {
+                    ...p,
+                    visible: false
+                }
           })
 
     return margin.concat(punctured, rest)
@@ -262,17 +255,13 @@ function puncture(path, width) {
 
 
 function collisionPaths(player, opponents) {
-    const opponentsPaths = opponents.reduce((acc, o) => {
-              return acc.push(o.get('path'))
-          }, List()),
+    const opponentsPaths = opponents.reduce((acc, o) => acc.push(o.get('path')), List()),
 
           myPath = player.get('path').skip(10),
 
           combinedPaths = myPath.concat(opponentsPaths).flatten()
 
-    return combinedPaths.filter(p => {
-        return p.visible === true
-    })
+    return combinedPaths.filter(p => p.visible === true)
 }
 
 
@@ -323,8 +312,7 @@ function initPlayer(gamearea, player) {
 
 
 function randomAngle() {
-    const angle = Math.floor(Math.random() * 360) + 0
-    return angle
+    return Math.floor(Math.random() * 360) + 0
 }
 
 
@@ -344,7 +332,7 @@ function randomPosition(gamearea) {
 
 
 function enoughPlayers(players) {
-    if (players && players.count() >= PLAYERS_REQUIRED) {
+    if (players && players.size >= PLAYERS_REQUIRED) {
         return true
     }
 
