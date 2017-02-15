@@ -100,7 +100,8 @@ export default function reducer(state = INITIAL_STATE, action) {
             return state.update('waiting', waiting => waiting.push(action.id))
 
         case REMOVE_PLAYER:
-            const lessRemoved = state.get('waiting').reduce((acc, id) => {
+            // Remove from waiting list
+            const waitingListLessRemoved = state.get('waiting').reduce((acc, id) => {
                 if (id === action.id) {
                     return acc
                 }
@@ -108,7 +109,14 @@ export default function reducer(state = INITIAL_STATE, action) {
                 return acc.push(id)
             }, List())
 
-            return state.set('waiting', lessRemoved)
+            // Remove from active games
+            const gamesLessRemoved = state
+                .get('games')
+                .map((game, gameId) => game.deleteIn(['players', action.id]))
+
+            return state
+                .set('waiting', waitingListLessRemoved)
+                .set('games', gamesLessRemoved)
 
         /**
          * @todo Refactor this to only run on the relevant game based on game id
@@ -159,11 +167,14 @@ export default function reducer(state = INITIAL_STATE, action) {
     return state
 }
 
-
+// @todo Refactor so it starts multiple games at the same time
 function createGame(state, action) {
-    const players = state.get('waiting').reduce((acc, p, index) => {
-        return acc.set(p, INITAL_PLAYER.set('color', COLORS.get(index)))
-    }, Map())
+    const players = state
+                        .get('waiting')
+                        .take(MAX_PLAYERS)
+                        .reduce((acc, p, index) => {
+                            return acc.set(p, INITAL_PLAYER.set('color', COLORS.get(index)))
+                        }, Map())
 
     const newGame = INITIAL_GAME.set('players', players)
     const id = Date.now()

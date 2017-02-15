@@ -1,6 +1,6 @@
 import gameloop from 'node-gameloop'
 
-import { startServer, detectRoundTripTime } from './server'
+import { startServer, encode, sendToId } from './server'
 import makeStore from './store'
 import { updateGame
        , clearPositions
@@ -21,14 +21,14 @@ const RTT_DETECTION_INTERVAL = 500 // @todo Figure out if there is a better numb
 
 
 const store = makeStore()
-const io = startServer(store)
+const wss = startServer(store)
 
 
 gameloop.setGameLoop(lobbyUpdate, LOBBY_UPDATE_INTERVAL)
 gameloop.setGameLoop(cooldownUpdate, COOLDOWN_UPDATE_INTERVAL)
 gameloop.setGameLoop(physicsUpdate, PHYSICS_UPDATE_INTERVAL)
 gameloop.setGameLoop(serverUpdate, SERVER_UPDATE_INTERVAL)
-gameloop.setGameLoop(() => { detectRoundTripTime(io) }, RTT_DETECTION_INTERVAL)
+gameloop.setGameLoop(() => { wss.broadcast(encode('dtt', Date.now())) }, RTT_DETECTION_INTERVAL)
 
 
 // Update lobby queue, start new games, and clean up stale game instances
@@ -78,9 +78,7 @@ function serverUpdate() {
     store.getState().get('games').map((game, gameId) => {
 
         game.get('players').map((p, id) => {
-
-            io.to('/#' + id).emit('gameState', makeOutput(game))
-
+            sendToId(wss, id, 'gameState', makeOutput(game))
         })
 
         store.dispatch(clearPositions(gameId))

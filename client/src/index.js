@@ -1,5 +1,4 @@
 import Elm from './Main'
-import socket from 'socket.io-client'
 
 
 const game = Elm.fullscreen(Elm.Main, {
@@ -11,11 +10,11 @@ const game = Elm.fullscreen(Elm.Main, {
 let ws = null
 
 
-game.ports.playerOutput.subscribe((output) => {
-	if (ws && ws.connected) {
-		ws.emit('playerOutput', output)
+game.ports.playerOutput.subscribe(output => {
+	if (ws && ws.readyState === ws.OPEN) {
+		ws.send(encode('playerOutput', output))
 	}
-	
+
 })
 
 
@@ -23,19 +22,59 @@ game.ports.onlineGame.subscribe(() => {
 	if (ws) {
 		ws.close()
 	}
-	
-	ws = socket('http://localhost:9000')
-	
-	ws.on('gameState', (data) => {
-		game.ports.serverInput.send(data)
-	})
-	
-	ws.on('playerId', (id) => {
-		game.ports.serverIdInput.send(id)
-	})
-	
-	ws.on('hey', () => {
-		ws.emit('ho')
-	})
-	
+
+	ws = new WebSocket('ws://localhost:9000')
+	ws.onopen = onOpen;
+	ws.onclose = onClose;
+	ws.onmessage = onMessage;
+	ws.onerror = onError;
+
 })
+
+function onOpen(event) {
+	console.info('websocket opened', event)
+}
+
+function onClose(event) {
+	console.info('websocket closed', event)
+}
+
+function onError(event) {
+	console.log('websocket error', event)
+}
+
+function onMessage(event) {
+	const { topic, data } = decode(event.data)
+
+	switch (topic) {
+		case 'gameState':
+			game.ports.serverInput.send(data)
+			break;
+
+		case 'playerId':
+			game.ports.serverIdInput.send(data)
+			break;
+
+		case 'dtt':
+			ws.send(encode('dtt', data))
+			break;
+	
+		default:
+			break;
+	}
+}
+
+function encode(topic, data) {
+	return JSON.stringify({
+		t: topic,
+		d: data
+	})
+}
+
+function decode(string) {
+	const obj = JSON.parse(string)
+	return {
+		topic: obj.t,
+		data: obj.d
+	}
+}
