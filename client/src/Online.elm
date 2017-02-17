@@ -2,14 +2,11 @@ module Online where
 
 import Set
 import Char
-import Color
 import Maybe exposing (withDefault)
 
 import Input exposing (Input)
 import Game exposing (..)
 import Player exposing (..)
-import Position exposing (..)
-import Utils exposing (..)
 
 
 update : Input -> Game -> Game
@@ -248,19 +245,6 @@ isStale previousServerTime serverTime =
                         
                     else
                         True
-
-
-asPosition : PositionOnline -> Position (Float, Float)
-asPosition p =
-    case p of 
-        Actual x -> x
-        Prediction x -> x
-        
-
-isPrediction p =
-    case p of 
-        Prediction _ -> True
-        Actual _ -> False
 
 
 type alias TickObject = { state: State

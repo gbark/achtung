@@ -1,6 +1,6 @@
 import gameloop from 'node-gameloop'
 
-import { startServer, encode, sendToId } from './server'
+import { startServer, encode, sendToId, WS_TOPIC } from './server'
 import makeStore from './store'
 import { updateGame
        , clearPositions
@@ -28,7 +28,9 @@ gameloop.setGameLoop(lobbyUpdate, LOBBY_UPDATE_INTERVAL)
 gameloop.setGameLoop(cooldownUpdate, COOLDOWN_UPDATE_INTERVAL)
 gameloop.setGameLoop(physicsUpdate, PHYSICS_UPDATE_INTERVAL)
 gameloop.setGameLoop(serverUpdate, SERVER_UPDATE_INTERVAL)
-gameloop.setGameLoop(() => { wss.broadcast(encode('dtt', Date.now())) }, RTT_DETECTION_INTERVAL)
+gameloop.setGameLoop(() => { 
+    wss.broadcast(encode(WS_TOPIC.PINGPONG, Date.now())) 
+}, RTT_DETECTION_INTERVAL)
 
 
 // Update lobby queue, start new games, and clean up stale game instances
@@ -78,7 +80,7 @@ function serverUpdate() {
     store.getState().get('games').map((game, gameId) => {
 
         game.get('players').map((p, id) => {
-            sendToId(wss, id, 'gameState', makeOutput(game))
+            sendToId(wss, id, WS_TOPIC.GAME_STATE, makeOutput(game))
         })
 
         store.dispatch(clearPositions(gameId))

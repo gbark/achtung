@@ -10,6 +10,13 @@ import { addPlayer
 const HOST = 'localhost'
 const PORT = 9000
 
+export const WS_TOPIC = {
+    PINGPONG: 'p',
+    PLAYER_OUTPUT: 'o',
+    PLAYER_ID: 'i',
+    GAME_STATE: 's'
+}
+
 export function startServer(store) {
     const wss = new WebSocketServer({
         host: HOST,
@@ -29,10 +36,10 @@ export function startServer(store) {
             const { topic, data } = decode(string)
 
             switch (topic) {
-                case 'playerOutput':
+                case WS_TOPIC.PLAYER_OUTPUT:
                     store.dispatch(setDirection(data.direction, ws.id, data.sequence))
                     break;
-                case 'dtt':
+                case WS_TOPIC.PINGPONG:
                     console.log(`round trip time ${Date.now() - data}`)
                     store.dispatch(setRoundTripTime(ws.id, Date.now() - data))
                     break;
@@ -41,6 +48,7 @@ export function startServer(store) {
                     break;
             }
         })
+
         ws.on('unexpected-response', () => {
             console.log(`unexpected response from ${ws.id}`)
         })
@@ -53,7 +61,7 @@ export function startServer(store) {
         })
 
         store.dispatch(addPlayer(ws.id))
-        ws.send(encode('playerId', ws.id))
+        ws.send(encode(WS_TOPIC.PLAYER_ID, ws.id))
 
         // @todo - boot non responding clients
     })
@@ -74,16 +82,19 @@ export function sendToId(wss, id, topic, data) {
 }
 
 export function encode(topic, data) {
-    return JSON.stringify({ 
-        t: topic,
-        d: data
-    })
+    if (typeof topic !== 'string' || topic.length !== 1) {
+        throw new Error('Subprotocol Error - Topic invalid')
+    }
+    return topic + (typeof data === 'string' ? data : JSON.stringify(data))
 }
 
 export function decode(string) {
-    const obj = JSON.parse(string)
+    const topic = string.charAt(0),
+        data = string.slice(1, string.length),
+        needsParsing = data.charAt(0) === '"' || data.charAt(0) === '{'
+
     return {
-        topic: obj.t,
-        data: obj.d
+        topic,
+        data: needsParsing ? JSON.parse(data) : data
     }
 }
