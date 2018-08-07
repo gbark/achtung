@@ -1,7 +1,6 @@
 import Color exposing (..)
 import Window
 import Graphics.Collage exposing (..)
-import Graphics.Element exposing (..)
 import Keyboard
 import Char
 import Time exposing (..)
@@ -60,11 +59,19 @@ type Direction
 
 type Position a = Visible a | Hidden a
 
-
+maxAngleChange : number
 maxAngleChange = 5
+
+speed : number
 speed = 125
+
+snakeWidth : number
 snakeWidth = 3
+
+sidebarWidth : number
 sidebarWidth = 250
+
+sidebarBorderWidth : number
 sidebarBorderWidth = 5
 
 
@@ -258,10 +265,10 @@ updatePlayer delta gamearea time players player =
             paths =
                 collisionPaths player' players
 
-            hs =
+            hasHitSnake =
                 any (hitSnake position) paths
 
-            hw =
+            hasHitWall =
                 hitWall position gamearea
 
             winner =
@@ -273,7 +280,7 @@ updatePlayer delta gamearea time players player =
                     False
 
         in
-            if hs || hw then
+            if hasHitSnake || hasHitWall then
                 { player' | alive = False }
 
             else if winner then
@@ -289,6 +296,7 @@ updatePlayer delta gamearea time players player =
                 player'
 
 
+collisionPaths : Player -> List Player -> List (Position ( Float, Float ))
 collisionPaths player players =
     let
         others =
@@ -341,6 +349,10 @@ move delta player =
         }
 
 
+puncture
+    : List (Position ( Float, Float ))
+    -> number
+    -> List (Position ( Float, Float ))
 puncture path length =
     if length < 1 then
         path
@@ -507,6 +519,7 @@ renderPlayer player =
         map (path >> traced lineStyle) positions
 
 
+sidebar : Game -> Html
 sidebar game =
     div [ style [ ("position", "absolute")
                 , ("right", "0")
@@ -543,6 +556,7 @@ sidebar game =
         ]
 
 
+scoreboard : Game -> Html
 scoreboard game =
     div [] [ (if length game.players > 1 then
                 h3 [] [(Html.text ("Round: " ++ toString game.round))]
@@ -558,6 +572,7 @@ scoreboard game =
            ]
 
 
+scoreboardPlayer : Player -> Html
 scoreboardPlayer {keyDesc, id, score, color} =
     li [ key (toString id), style [ ("color", (colorToString color)) ] ]
        [ Html.text ("Player "
@@ -569,7 +584,7 @@ scoreboardPlayer {keyDesc, id, score, color} =
                     ++ " points")
        ]
 
-
+start : Html
 start =
     div [] [ ul [ style [ ("textAlign", "left"), ("color", "grey") ] ]
                 [ li [] [ (Html.text "Press <1> for single player") ]
@@ -579,6 +594,7 @@ start =
            ]
 
 
+info : Html
 info =
     div [ style [ ("color", "grey")
                 , ("position", "absolute")
@@ -600,7 +616,7 @@ info =
 
 -- HELPERS
 
-
+colorToString : Color -> String
 colorToString c =
     let { red, green, blue } = toRgb c
     in
